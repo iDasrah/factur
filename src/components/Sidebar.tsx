@@ -41,7 +41,7 @@ const Sidebar = () => {
     ]
 
     return (
-        <div className="hidden bg-white border-r-2 border-gray-200 md:flex flex-col md:max-w-20 lg:max-w-64 md:min-h-screen">
+        <div className="hidden bg-white border-r-2 border-gray-200 md:flex flex-col md:min-w-20 lg:min-w-64 md:min-h-screen">
             <h1 className="flex font-semibold text-blue-600 text-3xl w-full justify-center p-3 lg:justify-start lg:pl-7 lg:py-4 border-b-2 border-gray-200 select-none">F<span className="hidden lg:block">actur</span></h1>
             {
                 sections.map((section) => (
