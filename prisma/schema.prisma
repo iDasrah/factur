@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Customer {
+    id        String   @id @default(cuid(2))
+    name      String
+    address   String
+    email     String?  @unique
+    phone     String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    quotes   Quote[]
+    invoices Invoice[]
+
+    @@index([email])
+    @@index([name])
+}
+
+model Quote {
+    id             String      @id @default(cuid(2))
+    num            String      @unique
+    emitDate       DateTime    @default(now())
+    expirationDate DateTime    @default(dbgenerated("now() + interval '30 days'"))
+    status         QuoteStatus @default(DRAFT)
+    title          String?
+    totalAmount    Float?
+    invoicedAmount Float?      @default(0)
+    notes          String?
+    createdAt      DateTime    @default(now())
+    updatedAt      DateTime    @updatedAt
+
+    customerId String
+    customer   Customer    @relation(fields: [customerId], references: [id])
+    lines      QuoteLine[]
+    invoices   Invoice[]
+
+    @@index([customerId])
+    @@index([status])
+}
+
+model Invoice {
+    id        String        @id @default(cuid(2))
+    num       String        @unique
+    emitDate  DateTime      @default(now())
+    dueDate   DateTime      @default(dbgenerated("now() + interval '30 days'"))
+    status    InvoiceStatus @default(UNPAID)
+    title     String?
+    createdAt DateTime      @default(now())
+    updatedAt DateTime      @updatedAt
+
+    customerId String
+    customer   Customer      @relation(fields: [customerId], references: [id])
+    quoteId    String?
+    quote      Quote?        @relation(fields: [quoteId], references: [id])
+    lines      InvoiceLine[]
+
+    @@index([customerId])
+    @@index([quoteId])
+    @@index([status])
+}
+
+model QuoteLine {
+    id          String @id @default(cuid(2))
+    description String
+    unitPrice   Float
+    quantity    Int
+
+    quoteId String
+    quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+model InvoiceLine {
+    id          String @id @default(cuid(2))
+    description String
+    unitPrice   Float
+    quantity    Int
+
+    invoiceId String
+    invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+enum QuoteStatus {
+    DRAFT
+    SENT
+    ACCEPTED
+    DECLINED
+}
+
+enum InvoiceStatus {
+    UNPAID
+    PAID
+    CANCELLED
+}
