@@ -48,7 +48,9 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body className="md:min-h-screen bg-gray-50 flex">
         <Sidebar />
-        {children}
+        <main className="w-full pb-20 md:pb-0">
+            {children}
+        </main>
         <BottomNav />
         <Scripts />
       </body>

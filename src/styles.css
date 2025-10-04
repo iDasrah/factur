@@ -25,4 +25,36 @@
     .bottomNav-addLink {
         @apply flex items-center p-4 gap-4 active:bg-blue-700 text-white w-full transition-colors duration-150;
     }
+
+    .stat-card {
+        @apply bg-white rounded-lg border-1 border-gray-100 p-4;
+    }
+
+    .stat-card-header {
+        @apply flex justify-between items-center;
+    }
+
+    .stat-card-header-icon {
+        @apply text-blue-600 rounded-lg bg-blue-100 p-1;
+    }
+
+    .stat-card-title {
+        @apply text-lg font-semibold flex items-center gap-4;
+    }
+
+    .stat-card-view {
+        @apply active:bg-gray-100 p-1 rounded-full transition-colors duration-150;
+    }
+
+    .stat-card-stat {
+        @apply text-3xl mt-6;
+    }
+
+    .dashboard-section-card {
+        @apply bg-white rounded-lg p-4 border border-gray-100;
+    }
+
+    .dashboard-section-card-title {
+        @apply text-xl font-semibold;
+    }
 }
