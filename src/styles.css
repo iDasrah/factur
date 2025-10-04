@@ -1,15 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&display=swap');
 @import "tailwindcss";
 
-body {
-  @apply m-0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+    --font-sans: "Alan Sans", sans-serif;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+@layer components {
+    .sidebar-section {
+        @apply border-b-2 border-gray-200 p-4 flex flex-col justify-center items-center lg:block;
+    }
+
+    .sidebar-section-title {
+        @apply text-xs text-gray-400 lg:text-sm lg:pl-3 lg:mb-1;
+    }
+
+    .sidebar-link {
+        @apply flex items-center gap-2 hover:bg-gray-100 hover:text-blue-600 rounded-lg p-3;
+    }
+
+    .sidebar-link-text {
+        @apply hidden lg:block text-lg;
+    }
+
+    .bottomNav-addLink {
+        @apply flex items-center p-4 gap-4 active:bg-blue-700 text-white w-full transition-colors duration-150;
+    }
 }

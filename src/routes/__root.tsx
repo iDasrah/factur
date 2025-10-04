@@ -3,15 +3,13 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 import {ReactNode} from "react";
+import Sidebar from "@/components/Sidebar.tsx";
+import BottomNav from "@/components/BottomNav.tsx";
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -48,20 +46,10 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="md:min-h-screen bg-gray-50 flex">
+        <Sidebar />
         {children}
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
+        <BottomNav />
         <Scripts />
       </body>
     </html>
