@@ -23,8 +23,9 @@ model Customer {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    quotes   Quote[]
-    invoices Invoice[]
+    quotes     Quote[]
+    invoices   Invoice[]
+    activities Activity[]
 
     @@index([email])
     @@index([name])
@@ -47,6 +48,7 @@ model Quote {
     customer   Customer    @relation(fields: [customerId], references: [id])
     lines      QuoteLine[]
     invoices   Invoice[]
+    activities Activity[]
 
     @@index([customerId])
     @@index([status])
@@ -67,6 +69,7 @@ model Invoice {
     quoteId    String?
     quote      Quote?        @relation(fields: [quoteId], references: [id])
     lines      InvoiceLine[]
+    activities Activity[]
 
     @@index([customerId])
     @@index([quoteId])
@@ -91,6 +94,39 @@ model InvoiceLine {
 
     invoiceId String
     invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+    id        String       @id @default(cuid(2))
+    type      ActivityType
+    createdAt DateTime     @default(now())
+
+    quoteId String?
+    quote   Quote?  @relation(fields: [quoteId], references: [id])
+
+    invoiceId String?
+    invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+    customerId String?
+    customer   Customer? @relation(fields: [customerId], references: [id])
+
+    @@index([createdAt])
+}
+
+enum ActivityType {
+    QUOTE_CREATED
+    QUOTE_SENT
+    QUOTE_ACCEPTED
+    QUOTE_DECLINED
+
+    INVOICE_CREATED
+    INVOICE_SENT
+    INVOICE_PAID
+    INVOICE_CANCELLED
+
+    CUSTOMER_CREATED
+    CUSTOMER_DELETED
+    CUSTOMER_EDITED
 }
 
 enum QuoteStatus {
