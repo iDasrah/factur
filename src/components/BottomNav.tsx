@@ -43,7 +43,7 @@ const BottomNav = () => {
                 <Plus color="white" size={24} />
             </button>
             <div className={`${!isOpen && 'hidden'} fixed bottom-18 right-2 rounded-lg bg-blue-500 z-50 overflow-hidden md:hidden`}>
-                <Link to="/" className="bottomNav-addLink" onClick={() => setIsOpen(false)}>
+                <Link to="/customers/new" className="bottomNav-addLink" onClick={() => setIsOpen(false)}>
                     <UserPlus />
                     <p>Nouveau client</p>
                 </Link>

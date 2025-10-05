@@ -32,7 +32,7 @@ const Sidebar = () => {
                     icon: <FilePlus />,
                 },
                 {
-                    path: "/",
+                    path: "/customers/new",
                     name: "Nouveau client",
                     icon: <UserPlus />,
                 }
