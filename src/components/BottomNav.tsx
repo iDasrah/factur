@@ -17,7 +17,7 @@ const BottomNav = () => {
             icon: <Users />,
         },
         {
-            path: "/",
+            path: "/documents",
             name: "Documents",
             icon: <File />
         }

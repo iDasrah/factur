@@ -17,7 +17,7 @@ const Sidebar = () => {
                     icon: <Users />
                 },
                 {
-                    path: "/",
+                    path: "/documents",
                     name: "Documents",
                     icon: <File />,
                 }
