@@ -191,14 +191,14 @@ function RouteComponent() {
                         <button
                             type="submit"
                             disabled={createClientMut.isPending}
-                            className="cursor-pointer px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="create-btn"
                         >
                             {createClientMut.isPending ? 'Création...' : 'Créer le client'}
                         </button>
                         <button
                             type="button"
                             onClick={() => navigate({to: '/customers'})}
-                            className="cursor-pointer px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="cancel-btn"
                         >
                             Annuler
                         </button>
