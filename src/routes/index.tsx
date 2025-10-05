@@ -172,7 +172,7 @@ function App() {
                         <h3>Devis envoyés</h3>
                     </div>
 
-                    <Link to="/" className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus:['SENT']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -185,7 +185,7 @@ function App() {
                         <h3>Devis acceptés</h3>
                     </div>
 
-                    <Link to="/" className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus:['ACCEPTED']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -198,7 +198,7 @@ function App() {
                         <h3>Devis refusés</h3>
                     </div>
 
-                    <Link to="/" className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus:['DECLINED']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -228,7 +228,7 @@ function App() {
             <section className="section-card flex-1/4 mb-4">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Factures impayées</h2>
-                    <Link to='/' className="text-gray-500 hover:underline">Voir tout</Link>
+                    <Link to='/documents' search={{invoiceStatus:['UNPAID']}} className="text-gray-500 hover:underline">Voir tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">
                     {
@@ -290,7 +290,7 @@ function App() {
             <section className="section-card flex-1">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Devis en attente</h2>
-                    <Link to='/' className="text-gray-500 hover:underline">Voir tout</Link>
+                    <Link to='/documents' search={{quoteStatus:['SENT']}} className="text-gray-500 hover:underline">Voir tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">
                     {
@@ -298,7 +298,7 @@ function App() {
                             pendingQuotes.map((quote) => {
                                     const dueDate = new Date(quote.expirationDate);
 
-                                    return <Link to='/' key={quote.num}
+                                    return <Link to='/quotes/$quoteId' params={{quoteId: quote.id}} key={quote.num}
                                                  className="flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50">
                                         <div>
                                             <p className="font-medium">Devis #{quote.num}</p>
