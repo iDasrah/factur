@@ -241,7 +241,7 @@ function App() {
                                 const isLate = diffDays > 0;
                                 const totalAmount = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
-                                return <Link to="/" key={invoice.num}
+                                return <Link to="/invoices/$invoiceId" params={{invoiceId: invoice.id}} key={invoice.num}
                                              className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
                                     <div>
                                         <p className="font-medium">Facture #{invoice.num}</p>
