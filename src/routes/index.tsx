@@ -1,69 +1,166 @@
 import {createFileRoute, Link} from '@tanstack/react-router'
-import {Check, Eye, Plus, Send, X} from "lucide-react";
+import {Check, Eye, Plus, Send, UserMinus, UserPen, UserPlus, X} from "lucide-react";
+import {createServerFn} from "@tanstack/react-start";
+import prisma from "@/lib/db.ts";
+import {$Enums} from "@prisma/client";
+import ActivityType = $Enums.ActivityType;
+import {ReactNode} from "react";
+import {endOfMonth, formatDistanceToNow, startOfMonth, subMonths} from "date-fns";
+import { fr as frLocale } from 'date-fns/locale';
+
+const getData = createServerFn().handler(async () => {
+    const now = new Date();
+    const thisMonthStart = startOfMonth(now);
+    const lastMonth = subMonths(now, 1);
+    const lastMonthStart = startOfMonth(lastMonth);
+    const lastMonthEnd = endOfMonth(lastMonth);
+
+    const [
+        {sentCount, acceptedCount, declinedCount},
+        recentActivity,
+        pendingQuotes,
+        unpaidInvoices,
+        currentMonthInvoices,
+        lastMonthInvoices
+    ] = await Promise.all([
+        // stats
+        {
+            sentCount: await prisma.quote.count({ where: { status: 'SENT' } }),
+            acceptedCount: await prisma.quote.count({ where: { status: 'ACCEPTED' } }),
+            declinedCount: await prisma.quote.count({ where: { status: 'DECLINED' } }),
+        },
+
+        // recent activities
+        prisma.activity.findMany({
+            take: 3,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                customer: true,
+                invoice: true,
+                quote: true
+            }
+        }),
+
+        // pending quotes
+        prisma.quote.findMany({
+            where: { status: 'SENT' },
+            take: 3,
+            include: { customer: true },
+            orderBy: { expirationDate: 'asc' }
+        }),
+
+        // unpaid invoices
+        prisma.invoice.findMany({
+            where: { status: 'UNPAID' },
+            take: 3,
+            include: {
+                customer: true,
+                lines: true
+            },
+            orderBy: { dueDate: 'asc' }
+        }),
+
+        // this month invoices
+        prisma.invoice.findMany({
+            where: {
+                emitDate: { gte: thisMonthStart }
+            },
+            include: { lines: true }
+        }),
+
+        // last month invoices
+        prisma.invoice.findMany({
+            where: {
+                emitDate: {
+                    gte: lastMonthStart,
+                    lte: lastMonthEnd
+                }
+            },
+            include: { lines: true }
+        })
+    ]);
+
+    const stats = {
+        sent: sentCount,
+        accepted: acceptedCount,
+        declined: declinedCount
+    }
+
+    let current = 0;
+    let invoiced = 0;
+    let pending = 0;
+
+    currentMonthInvoices.forEach(invoice => {
+        const total = invoice.lines.reduce((sum, line) =>
+            sum + line.unitPrice * line.quantity, 0
+        );
+
+        current += total;
+
+        if (invoice.status === 'PAID') {
+            invoiced += total;
+        } else if (invoice.status === 'UNPAID') {
+            pending += total;
+        }
+    });
+
+    const lastMonthRevenues = lastMonthInvoices.reduce((sum, invoice) => {
+        return sum + invoice.lines.reduce((s, line) =>
+            s + line.unitPrice * line.quantity, 0
+        );
+    }, 0);
+
+    return {
+        stats,
+        recentActivity,
+        pendingQuotes,
+        unpaidInvoices,
+        revenues: {
+            current,
+            invoiced,
+            pending,
+            lastMonthRevenues
+        }
+    };
+});
 
 export const Route = createFileRoute('/')({
     component: App,
+    loader: () => getData(),
 })
 
-enum ActivityType {
-    SENT,
-    CREATED
+const activityIcons: Record<ActivityType, ReactNode> = {
+    QUOTE_CREATED: <Plus className="text-blue-500"/>,
+    QUOTE_SENT: <Send className="text-blue-500"/>,
+    QUOTE_ACCEPTED: <Check className="text-green-500"/>,
+    QUOTE_DECLINED: <X className="text-red-500"/>,
+    INVOICE_CREATED: <Plus className="text-blue-500"/>,
+    INVOICE_SENT: <Send className="text-blue-500"/>,
+    INVOICE_PAID: <Check className="text-green-500"/>,
+    INVOICE_CANCELLED: <X className="text-red-500"/>,
+    CUSTOMER_CREATED: <UserPlus className="text-blue-500"/>,
+    CUSTOMER_DELETED: <UserMinus className="text-red-500"/>,
+    CUSTOMER_EDITED: <UserPen className="text-orange-500"/>,
 }
 
-const activityIcons = [<Send size={20} className="text-blue-500"/>, <Plus className="text-blue-500"/>];
-const activityText = [
-    (numQuote: string) => `Devis n°${numQuote} envoyé`,
-    (numQuote: string) => `Devis n°${numQuote} créé`,
-];
+const activityText: Record<ActivityType, (id: string) => string> = {
+    QUOTE_CREATED: (num) => `Devis n°${num} créé`,
+    QUOTE_SENT: (num) => `Devis n°${num} envoyé`,
+    QUOTE_ACCEPTED: (num) => `Devis n°${num} accepté`,
+    QUOTE_DECLINED: (num) => `Devis n°${num} refusé`,
+    INVOICE_CREATED: (num) => `Facture n°${num} créée`,
+    INVOICE_SENT: (num) => `Facture n°${num} envoyée`,
+    INVOICE_PAID: (num) => `Facture n°${num} payée`,
+    INVOICE_CANCELLED: (num) => `Facture n°${num} annulée`,
+    CUSTOMER_CREATED: (name) => `Client ${name} créé`,
+    CUSTOMER_DELETED: (name) => `Client ${name} supprimé`,
+    CUSTOMER_EDITED: (name) => `Client ${name} modifié`,
+}
 
 function App() {
-    const data = {
-        stats: {
-            sent: 3,
-            accepted: 1,
-            declined: 0
-        },
-        activities: [
-            {
-                type: ActivityType.CREATED,
-                numQuote: "2025-053",
-                clientName: 'ACME',
-                totalPrice: 1000,
-                date: 'Il y a 3h'
-            },
-            {
-                type: ActivityType.SENT,
-                numQuote: "2025-047",
-                clientName: 'Google',
-                totalPrice: 75000,
-                date: 'Il y a 7j'
-            }
-        ],
-        revenue: {
-            money: 420,
-            invoiced: 200,
-            pending: 220,
-            lastMonth: 420
-        },
-        pendingQuotes: [
-            {
-                numQuote: "2025-047",
-                clientName: 'Google',
-                totalPrice: 75000,
-                expirationDate: new Date('2025-10-9')
-            }
-        ],
-        pendingInvoices: [
-            {
-                numQuote: "2025-50",
-                clientName: 'Lirobi',
-                totalPrice: 400,
-                dueDate: new Date('2025-9-24')
-            }
-        ]
-    };
+    const {stats, recentActivity, pendingQuotes, unpaidInvoices, revenues} = Route.useLoaderData();
 
-    const revenueEvolution = Math.round((data.revenue.money - data.revenue.lastMonth) / data.revenue.lastMonth * 100)
+    const revenueEvolution = Math.round((revenues.current - revenues.lastMonthRevenues) / revenues.lastMonthRevenues * 100) | 0;
 
     return <div className="p-4 w-full">
         <h1 className="font-bold text-blue-600 text-center text-4xl mb-8 md:hidden">Factur</h1>
@@ -80,7 +177,7 @@ function App() {
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
-                <p className="stat-card-stat text-blue-500">{data.stats.sent}</p>
+                <p className="stat-card-stat text-blue-500">{stats.sent}</p>
             </div>
             <div className="stat-card flex-1">
                 <div className="stat-card-header">
@@ -93,7 +190,7 @@ function App() {
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
-                <p className="stat-card-stat text-green-500">{data.stats.accepted}</p>
+                <p className="stat-card-stat text-green-500">{stats.accepted}</p>
             </div>
             <div className="stat-card flex-1">
                 <div className="stat-card-header">
@@ -106,7 +203,7 @@ function App() {
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
-                <p className="stat-card-stat text-red-500">{data.stats.declined}</p>
+                <p className="stat-card-stat text-red-500">{stats.declined}</p>
             </div>
         </section>
 
@@ -114,18 +211,18 @@ function App() {
             <section className="dashboard-section-card mb-4 flex-1">
                 <h2 className="dashboard-section-card-title">Chiffre d'affaires</h2>
                 <div className="flex items-baseline gap-2">
-                    <p className="text-4xl font-bold text-blue-600">{data.revenue.money}€</p>
+                    <p className="text-4xl font-bold text-blue-600">{revenues.current}€</p>
                     <span
                         className={`text-sm ${revenueEvolution >= 0 ? 'text-green-500' : 'text-red-500'} font-medium`}>{revenueEvolution}% vs mois dernier</span>
                 </div>
                 <div className="flex gap-12">
                     <div>
                         <p className="text-sm text-gray-500">Facturé</p>
-                        <p className="text-2xl font-semibold text-gray-800">{data.revenue.invoiced}€</p>
+                        <p className="text-2xl font-semibold text-gray-800">{revenues.invoiced}€</p>
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">En attente</p>
-                        <p className="text-2xl font-semibold text-orange-500">{data.revenue.pending}€</p>
+                        <p className="text-2xl font-semibold text-orange-500">{revenues.pending}€</p>
                     </div>
                 </div>
             </section>
@@ -136,31 +233,35 @@ function App() {
                 </div>
                 <div className="space-y-3 mt-3">
                     {
-                        data.pendingInvoices.map((pendingInvoice) => {
+                        unpaidInvoices.length > 0 ?
+                        unpaidInvoices.map((invoice) => {
                                 const now = new Date();
-                                const dueDate = new Date(pendingInvoice.dueDate);
+                                const dueDate = new Date(invoice.dueDate);
                                 const diffTime = now.getTime() - dueDate.getTime();
                                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                                 const isLate = diffDays > 0;
+                                const totalAmount = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
-                                return <Link to="/" key={pendingInvoice.numQuote}
-                                            className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
+                                return <Link to="/" key={invoice.num}
+                                             className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
                                     <div>
-                                        <p className="font-medium">Facture #{pendingInvoice.numQuote}</p>
-                                        <p className="text-sm text-gray-600">{pendingInvoice.clientName}</p>
+                                        <p className="font-medium">Facture #{invoice.num}</p>
+                                        <p className="text-sm text-gray-600">{invoice.customer.name}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold text-gray-800">{pendingInvoice.totalPrice}€</p>
+                                        <p className="font-semibold text-gray-800">{totalAmount}€</p>
                                         <p className={`text-xs ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
                                             {isLate
-                                                ? `Retard: ${diffDays} jour${diffDays > 1 ? 's' : ''}`
-                                                : `Échéance: dans ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`
+                                                ? `Retard: ${formatDistanceToNow(dueDate, {locale: frLocale})}`
+                                                : `Échéance: dans ${formatDistanceToNow(dueDate, {locale: frLocale})}`
                                             }
                                         </p>
                                     </div>
                                 </Link>
                             }
-                        )
+                        ) : (
+                                <p className="font-light text-gray-400">Aucune facture impayée.</p>
+                            )
                     }
                 </div>
             </section>
@@ -171,16 +272,19 @@ function App() {
                 <h2 className="dashboard-section-card-title">Activité récente</h2>
                 <div className="space-y-3 mt-3">
                     {
-                        data.activities.map((activity, i) => (
-                            <Link to="/" key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        recentActivity.length > 0 ? recentActivity.map((activity, i) => (
+                            <Link to="/" key={i}
+                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                                 {activityIcons[activity.type]}
                                 <div className="flex-1">
-                                    <p className="font-medium">{activityText[activity.type].call(null, activity.numQuote)}</p>
-                                    <p className="text-sm text-gray-500">{activity.clientName} - {activity.totalPrice}€</p>
+                                    <p className="font-medium">{activityText[activity.type](activity.quote?.num || activity.invoice?.num || activity.customer?.name || activity.customer?.id || '')}</p>
+                                    <p className="text-sm text-gray-500"></p>
                                 </div>
-                                <span className="text-xs text-gray-400">{activity.date}</span>
+                                <span className="text-xs text-gray-400">{formatDistanceToNow(activity.createdAt, {locale: frLocale})}</span>
                             </Link>
-                        ))
+                        )) : (
+                            <p className="font-light text-gray-400">Aucune activité récente.</p>
+                        )
                     }
                 </div>
             </section>
@@ -191,25 +295,25 @@ function App() {
                 </div>
                 <div className="space-y-3 mt-3">
                     {
-                        data.pendingQuotes.map((pendingQuote) => {
-                                const now = new Date();
-                                const dueDate = new Date(pendingQuote.expirationDate);
-                                const diffTime = dueDate.getTime() - now.getTime();
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        pendingQuotes.length > 0 ?
+                            pendingQuotes.map((quote) => {
+                                    const dueDate = new Date(quote.expirationDate);
 
-                            return <Link to='/' key={pendingQuote.numQuote}
-                                  className="flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50">
-                                <div>
-                                    <p className="font-medium">Devis #{pendingQuote.numQuote}</p>
-                                    <p className="text-sm text-gray-500">{pendingQuote.clientName}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-semibold text-gray-800">{pendingQuote.totalPrice}€</p>
-                                    <p className="text-xs text-orange-500">Expire dans {diffDays} jours</p>
-                                </div>
-                            </Link>
-                        }
-                        )
+                                    return <Link to='/' key={quote.num}
+                                                 className="flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50">
+                                        <div>
+                                            <p className="font-medium">Devis #{quote.num}</p>
+                                            <p className="text-sm text-gray-500">{quote.customer.name}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold text-gray-800">{quote.totalAmount}€</p>
+                                            <p className="text-xs text-orange-500">Expire dans {formatDistanceToNow(dueDate, {locale: frLocale})}</p>
+                                        </div>
+                                    </Link>
+                                }
+                            ) : (
+                                <p className="font-light text-gray-400">Aucun devis en attente.</p>
+                            )
                     }
                 </div>
             </section>
