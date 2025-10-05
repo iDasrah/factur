@@ -1,11 +1,13 @@
-import {createFileRoute, Link} from '@tanstack/react-router'
+import {createFileRoute, Link, useRouter} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
 import prisma from "@/lib/db.ts";
 import {FileText, Receipt, Search, SlidersHorizontal, X} from "lucide-react";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
-import {useMemo, useState} from "react";
+import {useMemo} from "react";
+import { z } from 'zod';
+import {$Enums} from "@prisma/client";
 
 const getData = createServerFn().handler(async () => {
     const [invoices, quotes] = await Promise.all([
@@ -27,19 +29,23 @@ const getData = createServerFn().handler(async () => {
     return {invoices, quotes}
 });
 
+const searchParams = z.object({
+    quoteSearch: z.string().default(''),
+    quoteStatus: z.enum($Enums.QuoteStatus).array().default([]),
+    invoiceSearch: z.string().default(''),
+    invoiceStatus: z.enum($Enums.InvoiceStatus).array().default([])
+});
+
 export const Route = createFileRoute('/documents/')({
     component: RouteComponent,
-    loader: () => getData()
+    loader: () => getData(),
+    validateSearch: searchParams
 })
 
 function RouteComponent() {
     const {invoices, quotes} = Route.useLoaderData();
-
-    const [quoteSearch, setQuoteSearch] = useState("");
-    const [quoteStatusFilter, setQuoteStatusFilter] = useState<string[]>([]);
-
-    const [invoiceSearch, setInvoiceSearch] = useState("");
-    const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<string[]>([]);
+    const { quoteSearch, quoteStatus, invoiceSearch, invoiceStatus } = Route.useSearch();
+    const router = useRouter();
 
     const filteredQuotes = useMemo(() => {
         return quotes.filter(quote => {
@@ -48,12 +54,12 @@ function RouteComponent() {
                 quote.customer.name.toLowerCase().includes(quoteSearch.toLowerCase()) ||
                 quote.title?.toLowerCase().includes(quoteSearch.toLowerCase());
 
-            const matchStatus = quoteStatusFilter.length === 0 ||
-                quoteStatusFilter.includes(quote.status);
+            const matchStatus = quoteStatus.length === 0 ||
+                quoteStatus.includes(quote.status);
 
             return matchSearch && matchStatus;
         });
-    }, [quotes, quoteSearch, quoteStatusFilter]);
+    }, [quotes, quoteSearch, quoteStatus]);
 
     const filteredInvoices = useMemo(() => {
         return invoices.filter(invoice => {
@@ -62,27 +68,43 @@ function RouteComponent() {
                 invoice.customer.name.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
                 invoice.title?.toLowerCase().includes(invoiceSearch.toLowerCase());
 
-            const matchStatus = invoiceStatusFilter.length === 0 ||
-                invoiceStatusFilter.includes(invoice.status);
+            const matchStatus = invoiceStatus.length === 0 ||
+                invoiceStatus.includes(invoice.status);
 
             return matchSearch && matchStatus;
         });
-    }, [invoices, invoiceSearch, invoiceStatusFilter]);
+    }, [invoices, invoiceSearch, invoiceStatus]);
 
-    const toggleQuoteStatus = (status: string) => {
-        setQuoteStatusFilter(prev =>
-            prev.includes(status)
-                ? prev.filter(s => s !== status)
-                : [...prev, status]
-        );
+    const toggleQuoteStatus = (status: $Enums.QuoteStatus) => {
+        const newStatus = quoteStatus.includes(status)
+            ? quoteStatus.filter(s => s !== status)
+            : [...quoteStatus, status];
+
+        router.navigate({
+            to: '/documents',
+            search: {
+                quoteStatus: newStatus,
+                invoiceStatus,
+                quoteSearch,
+                invoiceSearch
+            }
+        });
     };
 
-    const toggleInvoiceStatus = (status: string) => {
-        setInvoiceStatusFilter(prev =>
-            prev.includes(status)
-                ? prev.filter(s => s !== status)
-                : [...prev, status]
-        );
+    const toggleInvoiceStatus = (status: $Enums.InvoiceStatus) => {
+        const newStatus = invoiceStatus.includes(status)
+            ? invoiceStatus.filter(s => s !== status)
+            : [...invoiceStatus, status];
+
+        router.navigate({
+            to: '/documents',
+            search: {
+                invoiceStatus: newStatus,
+                quoteStatus,
+                quoteSearch,
+                invoiceSearch
+            }
+        });
     };
 
     return (
@@ -103,11 +125,11 @@ function RouteComponent() {
                             placeholder="Rechercher par numéro, client ou titre..."
                             type="text"
                             value={quoteSearch}
-                            onChange={(e) => setQuoteSearch(e.target.value)}
+                            onChange={(e) => router.navigate({ to:'/documents', search: {quoteSearch: e.target.value, invoiceSearch, quoteStatus, invoiceStatus}})}
                         />
                         {quoteSearch && (
                             <button
-                                onClick={() => setQuoteSearch("")}
+                                onClick={() => router.navigate({to:'/documents', search: {quoteSearch: '', invoiceSearch, quoteStatus, invoiceStatus}})}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
                                 <X size={18} />
@@ -121,17 +143,17 @@ function RouteComponent() {
                             <span className="text-sm text-gray-600">Filtrer par statut</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED'].map(status => (
+                            {['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED'].map((status) => (
                                 <button
                                     key={status}
-                                    onClick={() => toggleQuoteStatus(status)}
-                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                        quoteStatusFilter.includes(status)
-                                            ? statusColors[status]
+                                    onClick={() => toggleQuoteStatus(status as $Enums.QuoteStatus)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                                        quoteStatus.includes(status as $Enums.QuoteStatus)
+                                            ? statusColors[status as $Enums.QuoteStatus]
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                                 >
-                                    {statusLabels[status]}
+                                    {statusLabels[status as $Enums.QuoteStatus]}
                                 </button>
                             ))}
                         </div>
@@ -171,7 +193,7 @@ function RouteComponent() {
                         <div className="text-center py-12">
                             <FileText className="mx-auto text-gray-300 mb-2" size={40}/>
                             <p className="text-gray-400">
-                                {quoteSearch || quoteStatusFilter.length > 0
+                                {quoteSearch || quoteStatus.length > 0
                                     ? "Aucun devis ne correspond à votre recherche"
                                     : "Aucun devis trouvé"
                                 }
@@ -193,11 +215,11 @@ function RouteComponent() {
                             placeholder="Rechercher par numéro, client ou titre..."
                             type="text"
                             value={invoiceSearch}
-                            onChange={(e) => setInvoiceSearch(e.target.value)}
+                            onChange={(e) => router.navigate({to: '/documents', search:{invoiceSearch: e.target.value, quoteSearch, quoteStatus, invoiceStatus}})}
                         />
                         {invoiceSearch && (
                             <button
-                                onClick={() => setInvoiceSearch("")}
+                                onClick={() => router.navigate({to:'/documents', search:{invoiceSearch:'', quoteSearch, quoteStatus, invoiceStatus}})}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
                                 <X size={18} />
@@ -214,14 +236,14 @@ function RouteComponent() {
                             {['UNPAID', 'PAID', 'CANCELLED'].map(status => (
                                 <button
                                     key={status}
-                                    onClick={() => toggleInvoiceStatus(status)}
-                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                        invoiceStatusFilter.includes(status)
+                                    onClick={() => toggleInvoiceStatus(status as $Enums.InvoiceStatus)}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                                        invoiceStatus.includes(status as $Enums.InvoiceStatus)
                                             ? statusColors[status]
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                                 >
-                                    {statusLabels[status]}
+                                    {statusLabels[status as $Enums.InvoiceStatus]}
                                 </button>
                             ))}
                         </div>
@@ -267,7 +289,7 @@ function RouteComponent() {
                         <div className="text-center py-12">
                             <Receipt className="mx-auto text-gray-300 mb-2" size={40}/>
                             <p className="text-gray-400">
-                                {invoiceSearch || invoiceStatusFilter.length > 0
+                                {invoiceSearch || invoiceStatus.length > 0
                                     ? "Aucune facture ne correspond à votre recherche"
                                     : "Aucune facture trouvée"
                                 }
