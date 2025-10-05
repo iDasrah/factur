@@ -207,8 +207,8 @@ function App() {
         </section>
 
         <div className="flex flex-col md:flex-row gap-4">
-            <section className="dashboard-section-card mb-4 flex-1">
-                <h2 className="dashboard-section-card-title">Chiffre d'affaires</h2>
+            <section className="section-card mb-4 flex-1">
+                <h2 className="section-card-title">Chiffre d'affaires</h2>
                 <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-bold text-blue-600">{revenues.current}€</p>
                     <span
@@ -225,9 +225,9 @@ function App() {
                     </div>
                 </div>
             </section>
-            <section className="dashboard-section-card flex-1/4 mb-4">
+            <section className="section-card flex-1/4 mb-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="dashboard-section-card-title">Factures impayées</h2>
+                    <h2 className="section-card-title">Factures impayées</h2>
                     <Link to='/' className="text-gray-500 hover:underline">Voir tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">
@@ -267,8 +267,8 @@ function App() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
-            <section className="dashboard-section-card flex-1">
-                <h2 className="dashboard-section-card-title">Activité récente</h2>
+            <section className="section-card flex-1">
+                <h2 className="section-card-title">Activité récente</h2>
                 <div className="space-y-3 mt-3">
                     {
                         recentActivity.length > 0 ? recentActivity.map((activity, i) => (
@@ -287,9 +287,9 @@ function App() {
                     }
                 </div>
             </section>
-            <section className="dashboard-section-card flex-1">
+            <section className="section-card flex-1">
                 <div className="flex justify-between items-center">
-                    <h2 className="dashboard-section-card-title">Devis en attente</h2>
+                    <h2 className="section-card-title">Devis en attente</h2>
                     <Link to='/' className="text-gray-500 hover:underline">Voir tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">

@@ -26,7 +26,7 @@ function RouteComponent() {
                         to="/customers/$customerId"
                         params={{ customerId: customer.id }}
                         key={customer.id}
-                        className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+                        className="section-card p-5 hover:shadow-md hover:border-blue-300 transition-all group"
                     >
                         <div className="flex items-start justify-between mb-3">
                             <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">

@@ -58,11 +58,11 @@
         @apply text-3xl mt-6;
     }
 
-    .dashboard-section-card {
+    .section-card {
         @apply bg-white rounded-lg p-4 border border-gray-100;
     }
 
-    .dashboard-section-card-title {
+    .section-card-title {
         @apply text-xl font-semibold;
     }
 
