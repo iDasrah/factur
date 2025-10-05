@@ -12,7 +12,7 @@ const Sidebar = () => {
                     icon: <LayoutDashboard />,
                 },
                 {
-                    path: "/",
+                    path: "/customers",
                     name: "Clients",
                     icon: <Users />
                 },

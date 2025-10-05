@@ -12,7 +12,7 @@ const BottomNav = () => {
             icon: <Home />,
         },
         {
-            path: "/",
+            path: "/customers",
             name: "Clients",
             icon: <Users />,
         },
