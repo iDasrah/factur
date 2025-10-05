@@ -38,20 +38,20 @@ function RouteComponent() {
                         </div>
 
                         <div className="space-y-2 text-sm">
-                            <div className="flex items-start gap-2 text-gray-600">
+                            <div className="customer-card-info">
                                 <MapPin size={16} className="mt-0.5 flex-shrink-0" />
                                 <address className="not-italic">{customer.address}</address>
                             </div>
 
                             {customer.phone && (
-                                <div className="flex items-center gap-2 text-gray-600">
+                                <div className="customer-card-info">
                                     <Phone size={16} className="flex-shrink-0" />
                                     <p>{customer.phone}</p>
                                 </div>
                             )}
 
                             {customer.email && (
-                                <div className="flex items-center gap-2 text-gray-600">
+                                <div className="customer-card-info">
                                     <Mail size={16} className="flex-shrink-0" />
                                     <p className="truncate">{customer.email}</p>
                                 </div>

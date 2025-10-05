@@ -65,4 +65,8 @@
     .dashboard-section-card-title {
         @apply text-xl font-semibold;
     }
+
+    .customer-card-info {
+        @apply flex items-start gap-2 text-gray-600;
+    }
 }
