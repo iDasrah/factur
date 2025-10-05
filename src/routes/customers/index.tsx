@@ -18,7 +18,10 @@ function RouteComponent() {
   const {customers} = Route.useLoaderData();
 
     return <div className="content">
-      <h2 className="page-title">Vos clients</h2>
+        <div className="flex items-center justify-between mb-4">
+            <h2 className="page-title m-0">Vos clients</h2>
+            <Link to='/customers/new' className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-600 transition-colors duration-150">Nouveau</Link>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {
                 customers.length > 0 ? customers.map(customer => (
