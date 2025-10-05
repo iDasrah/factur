@@ -162,9 +162,8 @@ function App() {
 
     const revenueEvolution = Math.round((revenues.current - revenues.lastMonthRevenues) / revenues.lastMonthRevenues * 100) | 0;
 
-    return <div className="p-4 w-full">
-        <h1 className="font-bold text-blue-600 text-center text-4xl mb-8 md:hidden">Factur</h1>
-        <h1 className="font-bold text-2xl mb-4">Tableau de bord</h1>
+    return <div className="content">
+        <h1 className="page-title">Tableau de bord</h1>
         <section className="flex flex-col gap-4 md:flex-row mb-5">
             <div className="stat-card flex-1">
                 <div className="stat-card-header">

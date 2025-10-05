@@ -49,6 +49,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body className="md:min-h-screen bg-gray-50 flex">
         <Sidebar />
         <main className="w-full pb-20 md:pb-0">
+            <h1 className="font-bold text-blue-600 text-center text-4xl mt-4 md:hidden">Factur</h1>
             {children}
         </main>
         <BottomNav />

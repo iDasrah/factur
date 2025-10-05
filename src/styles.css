@@ -26,6 +26,14 @@
         @apply flex items-center p-4 gap-4 active:bg-blue-700 text-white w-full transition-colors duration-150;
     }
 
+    .content {
+        @apply w-full p-4;
+    }
+
+    .page-title {
+        @apply font-bold text-2xl mb-4;
+    }
+
     .stat-card {
         @apply bg-white rounded-lg border-1 border-gray-100 p-4;
     }
