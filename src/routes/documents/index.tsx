@@ -109,7 +109,10 @@ function RouteComponent() {
 
     return (
         <div className="content">
-            <h2 className="page-title mb-6">Vos documents</h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="page-title m-0">Vos documents</h2>
+                <Link to='/documents/new' className="new-btn">Nouveau</Link>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <section className="section-card">

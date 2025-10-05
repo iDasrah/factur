@@ -47,7 +47,7 @@ const BottomNav = () => {
                     <UserPlus />
                     <p>Nouveau client</p>
                 </Link>
-                <Link to="/" className="bottomNav-addLink" onClick={() => setIsOpen(false)}>
+                <Link to="/documents/new" className="bottomNav-addLink" onClick={() => setIsOpen(false)}>
                     <FilePlus />
                     <p>Nouveau document</p>
                 </Link>

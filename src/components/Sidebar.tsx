@@ -27,7 +27,7 @@ const Sidebar = () => {
             name: "Outils",
             links: [
                 {
-                    path: "/",
+                    path: "/documents/new",
                     name: "Nouveau document",
                     icon: <FilePlus />,
                 },
