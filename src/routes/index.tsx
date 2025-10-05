@@ -6,7 +6,8 @@ import {$Enums} from "@prisma/client";
 import ActivityType = $Enums.ActivityType;
 import {ReactNode} from "react";
 import {endOfMonth, formatDistanceToNow, startOfMonth, subMonths} from "date-fns";
-import { fr as frLocale } from 'date-fns/locale';
+import {fr as frLocale} from 'date-fns/locale';
+import {Record} from "effect/Schema";
 
 const getData = createServerFn().handler(async () => {
     const now = new Date();
@@ -25,15 +26,15 @@ const getData = createServerFn().handler(async () => {
     ] = await Promise.all([
         // stats
         {
-            sentCount: await prisma.quote.count({ where: { status: 'SENT' } }),
-            acceptedCount: await prisma.quote.count({ where: { status: 'ACCEPTED' } }),
-            declinedCount: await prisma.quote.count({ where: { status: 'DECLINED' } }),
+            sentCount: await prisma.quote.count({where: {status: 'SENT'}}),
+            acceptedCount: await prisma.quote.count({where: {status: 'ACCEPTED'}}),
+            declinedCount: await prisma.quote.count({where: {status: 'DECLINED'}}),
         },
 
         // recent activities
         prisma.activity.findMany({
             take: 3,
-            orderBy: { createdAt: 'desc' },
+            orderBy: {createdAt: 'desc'},
             include: {
                 customer: true,
                 invoice: true,
@@ -43,29 +44,29 @@ const getData = createServerFn().handler(async () => {
 
         // pending quotes
         prisma.quote.findMany({
-            where: { status: 'SENT' },
+            where: {status: 'SENT'},
             take: 3,
-            include: { customer: true },
-            orderBy: { expirationDate: 'asc' }
+            include: {customer: true},
+            orderBy: {expirationDate: 'asc'}
         }),
 
         // unpaid invoices
         prisma.invoice.findMany({
-            where: { status: 'UNPAID' },
+            where: {status: 'UNPAID'},
             take: 3,
             include: {
                 customer: true,
                 lines: true
             },
-            orderBy: { dueDate: 'asc' }
+            orderBy: {dueDate: 'asc'}
         }),
 
         // this month invoices
         prisma.invoice.findMany({
             where: {
-                emitDate: { gte: thisMonthStart }
+                emitDate: {gte: thisMonthStart}
             },
-            include: { lines: true }
+            include: {lines: true}
         }),
 
         // last month invoices
@@ -76,7 +77,7 @@ const getData = createServerFn().handler(async () => {
                     lte: lastMonthEnd
                 }
             },
-            include: { lines: true }
+            include: {lines: true}
         })
     ]);
 
@@ -172,7 +173,7 @@ function App() {
                         <h3>Devis envoyés</h3>
                     </div>
 
-                    <Link to="/documents" search={{quoteStatus:['SENT']}} className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus: ['SENT']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -185,7 +186,7 @@ function App() {
                         <h3>Devis acceptés</h3>
                     </div>
 
-                    <Link to="/documents" search={{quoteStatus:['ACCEPTED']}} className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus: ['ACCEPTED']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -198,7 +199,7 @@ function App() {
                         <h3>Devis refusés</h3>
                     </div>
 
-                    <Link to="/documents" search={{quoteStatus:['DECLINED']}} className="stat-card-view">
+                    <Link to="/documents" search={{quoteStatus: ['DECLINED']}} className="stat-card-view">
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
                 </div>
@@ -228,37 +229,39 @@ function App() {
             <section className="section-card flex-1/4 mb-4">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Factures impayées</h2>
-                    <Link to='/documents' search={{invoiceStatus:['UNPAID']}} className="text-gray-500 hover:underline">Voir tout</Link>
+                    <Link to='/documents' search={{invoiceStatus: ['UNPAID']}}
+                          className="text-gray-500 hover:underline">Voir tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">
                     {
                         unpaidInvoices.length > 0 ?
-                        unpaidInvoices.map((invoice) => {
-                                const now = new Date();
-                                const dueDate = new Date(invoice.dueDate);
-                                const diffTime = now.getTime() - dueDate.getTime();
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                const isLate = diffDays > 0;
-                                const totalAmount = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+                            unpaidInvoices.map((invoice) => {
+                                    const now = new Date();
+                                    const dueDate = new Date(invoice.dueDate);
+                                    const diffTime = now.getTime() - dueDate.getTime();
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    const isLate = diffDays > 0;
+                                    const totalAmount = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
-                                return <Link to="/invoices/$invoiceId" params={{invoiceId: invoice.id}} key={invoice.num}
-                                             className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
-                                    <div>
-                                        <p className="font-medium">Facture #{invoice.num}</p>
-                                        <p className="text-sm text-gray-600">{invoice.customer.name}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-semibold text-gray-800">{totalAmount}€</p>
-                                        <p className={`text-xs ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
-                                            {isLate
-                                                ? `Retard: ${formatDistanceToNow(dueDate, {locale: frLocale})}`
-                                                : `Échéance: dans ${formatDistanceToNow(dueDate, {locale: frLocale})}`
-                                            }
-                                        </p>
-                                    </div>
-                                </Link>
-                            }
-                        ) : (
+                                    return <Link to="/invoices/$invoiceId" params={{invoiceId: invoice.id}}
+                                                 key={invoice.num}
+                                                 className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
+                                        <div>
+                                            <p className="font-medium">Facture #{invoice.num}</p>
+                                            <p className="text-sm text-gray-600">{invoice.customer.name}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold text-gray-800">{totalAmount}€</p>
+                                            <p className={`text-xs ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
+                                                {isLate
+                                                    ? `Retard: ${formatDistanceToNow(dueDate, {locale: frLocale})}`
+                                                    : `Échéance: dans ${formatDistanceToNow(dueDate, {locale: frLocale})}`
+                                                }
+                                            </p>
+                                        </div>
+                                    </Link>
+                                }
+                            ) : (
                                 <p className="font-light text-gray-400">Aucune facture impayée.</p>
                             )
                     }
@@ -271,17 +274,47 @@ function App() {
                 <h2 className="section-card-title">Activité récente</h2>
                 <div className="space-y-3 mt-3">
                     {
-                        recentActivity.length > 0 ? recentActivity.map((activity, i) => (
-                            <Link to="/" key={i}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                                {activityIcons[activity.type]}
-                                <div className="flex-1">
-                                    <p className="font-medium">{activityText[activity.type](activity.quote?.num || activity.invoice?.num || activity.customer?.name || activity.customer?.id || '')}</p>
-                                    <p className="text-sm text-gray-500"></p>
-                                </div>
-                                <span className="text-xs text-gray-400">{formatDistanceToNow(activity.createdAt, {locale: frLocale})}</span>
-                            </Link>
-                        )) : (
+                        recentActivity.length > 0 ? recentActivity.map((activity, i) => {
+                                const activityType = activity.type.split('_')[0];
+
+                                const getActivityLink = () => {
+                                    switch (activityType) {
+                                        case 'CUSTOMER':
+                                            return activity.customerId ? {
+                                                to: '/customers/$customerId' as const,
+                                                params: {customerId: activity.customerId}
+                                            } : null;
+                                        case 'QUOTE':
+                                            return activity.quoteId ? {
+                                                to: '/quotes/$quoteId' as const,
+                                                params: {quoteId: activity.quoteId}
+                                            } : null;
+                                        case 'INVOICE':
+                                            return activity.invoiceId ? {
+                                                to: '/invoices/$invoiceId' as const,
+                                                params: {invoiceId: activity.invoiceId}
+                                            } : null;
+                                        default:
+                                            return null;
+                                    }
+                                };
+
+                                const linkConfig = getActivityLink();
+
+                                if (!linkConfig) return null;
+
+                                return <Link to={linkConfig.to} params={linkConfig.params} key={i}
+                                             className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                                    {activityIcons[activity.type]}
+                                    <div className="flex-1">
+                                        <p className="font-medium">{activityText[activity.type](activity.quote?.num || activity.invoice?.num || activity.customer?.name || activity.customer?.id || '')}</p>
+                                        <p className="text-sm text-gray-500"></p>
+                                    </div>
+                                    <span
+                                        className="text-xs text-gray-400">{formatDistanceToNow(activity.createdAt, {locale: frLocale})}</span>
+                                </Link>
+                            }
+                        ) : (
                             <p className="font-light text-gray-400">Aucune activité récente.</p>
                         )
                     }
@@ -290,7 +323,8 @@ function App() {
             <section className="section-card flex-1">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Devis en attente</h2>
-                    <Link to='/documents' search={{quoteStatus:['SENT']}} className="text-gray-500 hover:underline">Voir tout</Link>
+                    <Link to='/documents' search={{quoteStatus: ['SENT']}} className="text-gray-500 hover:underline">Voir
+                        tout</Link>
                 </div>
                 <div className="space-y-3 mt-3">
                     {
@@ -306,7 +340,8 @@ function App() {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-semibold text-gray-800">{quote.totalAmount}€</p>
-                                            <p className="text-xs text-orange-500">Expire dans {formatDistanceToNow(dueDate, {locale: frLocale})}</p>
+                                            <p className="text-xs text-orange-500">Expire
+                                                dans {formatDistanceToNow(dueDate, {locale: frLocale})}</p>
                                         </div>
                                     </Link>
                                 }
