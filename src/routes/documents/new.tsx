@@ -51,6 +51,18 @@ const createDocument = createServerFn({method: 'POST'})
                     }
                 }
             });
+
+            await prisma.activity.create({
+                data: {
+                    type: 'QUOTE_CREATED',
+                    quote: {
+                        connect: {
+                            id: quote.id
+                        }
+                    }
+                }
+            });
+
             return { type: 'quote', id: quote.id };
         } else {
             const invoice = await prisma.invoice.create({
@@ -64,6 +76,18 @@ const createDocument = createServerFn({method: 'POST'})
                     }
                 }
             });
+
+            await prisma.activity.create({
+                data: {
+                   type: 'INVOICE_CREATED',
+                   invoice: {
+                       connect: {
+                           id: invoice.id
+                       }
+                   }
+                }
+            });
+
             return { type: 'invoice', id: invoice.id };
         }
     });

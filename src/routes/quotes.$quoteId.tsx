@@ -35,15 +35,28 @@ const getData = createServerFn()
 const sendQuote = createServerFn()
     .inputValidator((data: { quoteId: string }) => data)
     .handler(async ({data}) => {
-    return prisma.quote.update({
-        where: {
-            id: data.quoteId
-        },
-        data: {
-            status: 'SENT'
-        }
+        await prisma.quote.update({
+            where: {
+                id: data.quoteId
+            },
+            data: {
+                status: 'SENT'
+            }
+        });
+
+        await prisma.activity.create({
+            data: {
+                type: 'QUOTE_SENT',
+                quote: {
+                    connect: {
+                        id: data.quoteId
+                    }
+                }
+            }
+        });
+
+        return { op: 'sent', quote: data.quoteId }
     });
-});
 
 export const Route = createFileRoute('/quotes/$quoteId')({
     component: RouteComponent,
@@ -55,7 +68,7 @@ function RouteComponent() {
     const router = useRouter();
     const sendQuoteMut = useMutation({
         mutationKey: ['send', quote.id],
-        mutationFn: (data: {quoteId: string}) => sendQuote({data}),
+        mutationFn: (data: { quoteId: string }) => sendQuote({data}),
         onSuccess: () => {
             router.invalidate();
         }
@@ -68,7 +81,7 @@ function RouteComponent() {
     return (
         <div className="content">
             <Link to="/documents" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4">
-                <ArrowLeft size={20} />
+                <ArrowLeft size={20}/>
                 Retour aux documents
             </Link>
 
@@ -87,12 +100,12 @@ function RouteComponent() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div className="section-card">
                     <div className="flex items-center gap-2 mb-4">
-                        <User size={20} className="text-gray-400" />
+                        <User size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Client</h3>
                     </div>
                     <Link
                         to="/customers/$customerId"
-                        params={{ customerId: quote.customer.id }}
+                        params={{customerId: quote.customer.id}}
                         className="block hover:text-blue-600"
                     >
                         <p className="font-semibold text-gray-900 mb-1">{quote.customer.name}</p>
@@ -108,7 +121,7 @@ function RouteComponent() {
 
                 <div className="section-card">
                     <div className="flex items-center gap-2 mb-4">
-                        <Calendar size={20} className="text-gray-400" />
+                        <Calendar size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Dates</h3>
                     </div>
                     <div className="space-y-3">
@@ -129,7 +142,7 @@ function RouteComponent() {
 
                 <div className="section-card">
                     <div className="flex items-center gap-2 mb-4">
-                        <Receipt size={20} className="text-gray-400" />
+                        <Receipt size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Factures</h3>
                     </div>
                     {quote.invoices.length > 0 ? (
@@ -142,14 +155,15 @@ function RouteComponent() {
                                     <Link
                                         key={invoice.id}
                                         to="/invoices/$invoiceId"
-                                        params={{ invoiceId: invoice.id }}
+                                        params={{invoiceId: invoice.id}}
                                         className="block p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
                                     >
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-900">
                                                 Facture n°{invoice.num}
                                             </span>
-                                            <span className={`text-xs px-2 py-0.5 rounded ${statusColors[invoice.status]}`}>
+                                            <span
+                                                className={`text-xs px-2 py-0.5 rounded ${statusColors[invoice.status]}`}>
                                                 {statusLabels[invoice.status]}
                                             </span>
                                         </div>
@@ -173,7 +187,7 @@ function RouteComponent() {
 
             <div className="section-card mb-4">
                 <div className="flex items-center gap-2 mb-4">
-                    <FileText size={20} className="text-gray-400" />
+                    <FileText size={20} className="text-gray-400"/>
                     <h3 className="section-card-title">Détail du devis</h3>
                 </div>
 
@@ -214,8 +228,9 @@ function RouteComponent() {
                     </table>
                 </div>
             </div>
-            { quote.status === 'DRAFT' && (
-                <button onClick={onSend} className="w-full bg-blue-500 rounded-lg p-2 text-white hover:bg-blue-600 active:bg-blue-600">Envoyer</button>
+            {quote.status === 'DRAFT' && (
+                <button onClick={onSend}
+                        className="w-full bg-blue-500 rounded-lg p-2 text-white hover:bg-blue-600 active:bg-blue-600">Envoyer</button>
             )}
         </div>
     );

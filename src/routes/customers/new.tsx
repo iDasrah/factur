@@ -29,9 +29,22 @@ const createCustomer = createServerFn({method: 'POST'})
         };
     })
     .handler(async ({data}) => {
-        return await prisma.customer.create({
+        const customer = await prisma.customer.create({
             data,
         });
+
+        await prisma.activity.create({
+            data: {
+                type: 'CUSTOMER_CREATED',
+                customer: {
+                    connect: {
+                        id: customer.id
+                    }
+                }
+            }
+        });
+
+        return { type: 'customer', id: customer.id };
     });
 
 export const Route = createFileRoute('/customers/new')({
