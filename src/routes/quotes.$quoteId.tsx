@@ -1,10 +1,11 @@
-import {createFileRoute, Link, notFound} from '@tanstack/react-router'
+import {createFileRoute, Link, notFound, useRouter} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
 import prisma from "@/lib/db.ts";
 import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
+import {useMutation} from "@tanstack/react-query";
 
 const getData = createServerFn()
     .inputValidator((data: { quoteId: string }) => data)
@@ -31,6 +32,19 @@ const getData = createServerFn()
         return {quote};
     });
 
+const sendQuote = createServerFn()
+    .inputValidator((data: { quoteId: string }) => data)
+    .handler(async ({data}) => {
+    return prisma.quote.update({
+        where: {
+            id: data.quoteId
+        },
+        data: {
+            status: 'SENT'
+        }
+    });
+});
+
 export const Route = createFileRoute('/quotes/$quoteId')({
     component: RouteComponent,
     loader: ({params}) => getData({data: {quoteId: params.quoteId}})
@@ -38,6 +52,18 @@ export const Route = createFileRoute('/quotes/$quoteId')({
 
 function RouteComponent() {
     const {quote} = Route.useLoaderData();
+    const router = useRouter();
+    const sendQuoteMut = useMutation({
+        mutationKey: ['send', quote.id],
+        mutationFn: (data: {quoteId: string}) => sendQuote({data}),
+        onSuccess: () => {
+            router.invalidate();
+        }
+    });
+
+    const onSend = () => {
+        sendQuoteMut.mutate({quoteId: quote.id});
+    }
 
     return (
         <div className="content">
@@ -145,7 +171,7 @@ function RouteComponent() {
                 </div>
             )}
 
-            <div className="section-card">
+            <div className="section-card mb-4">
                 <div className="flex items-center gap-2 mb-4">
                     <FileText size={20} className="text-gray-400" />
                     <h3 className="section-card-title">Détail du devis</h3>
@@ -188,6 +214,9 @@ function RouteComponent() {
                     </table>
                 </div>
             </div>
+            { quote.status === 'DRAFT' && (
+                <button onClick={onSend} className="w-full bg-blue-500 rounded-lg p-2 text-white hover:bg-blue-600 active:bg-blue-600">Envoyer</button>
+            )}
         </div>
     );
 }
