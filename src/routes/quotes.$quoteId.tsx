@@ -1,11 +1,15 @@
-import {useMutation} from "@tanstack/react-query";
-import {createFileRoute, Link, notFound, useRouter} from '@tanstack/react-router'
+import {createFileRoute, Link, notFound} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
-import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
-import {statusColors, statusLabels} from "@/lib/constants.ts";
+import {Calendar, FileText, Receipt, User} from "lucide-react";
+import BackLink from "@/components/BackLink";
+import Card from "@/components/Card";
+import EmptyState from "@/components/EmptyState";
+import StatusBadge from "@/components/StatusBadge";
+import { useDocumentMutation } from "@/hooks/useDocumentMutation";
 import prisma from "@/lib/db.ts";
+import {calculateTotal} from "@/lib/utils.ts";
 
 const getData = createServerFn()
     .inputValidator((data: { quoteId: string }) => data)
@@ -78,20 +82,35 @@ export const Route = createFileRoute('/quotes/$quoteId')({
 
 function RouteComponent() {
     const {quote} = Route.useLoaderData();
-    const router = useRouter();
-    const sendQuoteMut = useMutation({
-        mutationKey: ['send', quote.id],
-        mutationFn: (data: { quoteId: string, status: "SENT" | "ACCEPTED" | "DECLINED" }) => setQuoteStatus({data}),
-        onSuccess: () => {
-            router.invalidate();
-        }
+    
+    const sendQuoteMut = useDocumentMutation({
+        documentId: quote.id,
+        documentType: 'quote',
+        action: 'send',
+        mutationFn: (data: { quoteId: string, status: "SENT" }) => setQuoteStatus({data})
     });
-    const deleteQuoteMut = useMutation({
-        mutationKey: ['delete', quote.id],
+
+    const acceptQuoteMut = useDocumentMutation({
+        documentId: quote.id,
+        documentType: 'quote',
+        action: 'accept',
+        mutationFn: (data: { quoteId: string, status: "ACCEPTED" }) => setQuoteStatus({data})
+    });
+
+    const declineQuoteMut = useDocumentMutation({
+        documentId: quote.id,
+        documentType: 'quote',
+        action: 'decline',
+        mutationFn: (data: { quoteId: string, status: "DECLINED" }) => setQuoteStatus({data})
+    });
+
+    const deleteQuoteMut = useDocumentMutation({
+        documentId: quote.id,
+        documentType: 'quote',
+        action: 'delete',
         mutationFn: (data: { quoteId: string }) => deleteQuote({data}),
-        onSuccess: () => {
-            router.navigate({to: '/documents'});
-        }
+        invalidate: false,
+        redirectTo: '/documents'
     });
 
     const onSend = () => {
@@ -103,20 +122,16 @@ function RouteComponent() {
     }
 
     const onAccept = () => {
-        sendQuoteMut.mutate({quoteId: quote.id, status: 'ACCEPTED'});
+        acceptQuoteMut.mutate({quoteId: quote.id, status: 'ACCEPTED'});
     }
 
     const onDecline = () => {
-        sendQuoteMut.mutate({quoteId: quote.id, status: 'DECLINED'});
+        declineQuoteMut.mutate({quoteId: quote.id, status: 'DECLINED'});
     }
 
     return (
         <div className="content">
-            <Link to="/documents" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4">
-                <ArrowLeft size={20}/>
-                Retour aux documents
-            </Link>
-
+            <BackLink to="/documents" label="Documents"/>
             <div className="flex items-start justify-between mb-6">
                 <div>
                     <h2 className="page-title mb-2">Devis n°{quote.num}</h2>
@@ -124,13 +139,11 @@ function RouteComponent() {
                         <p className="text-gray-600 text-lg">{quote.title}</p>
                     )}
                 </div>
-                <span className={`document-status ${statusColors[quote.status]}`}>
-                    {statusLabels[quote.status]}
-                </span>
+                <StatusBadge status={quote.status} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div className="section-card">
+                <Card variant="section">
                     <div className="flex items-center gap-2 mb-4">
                         <User size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Client</h3>
@@ -149,9 +162,9 @@ function RouteComponent() {
                             <p className="text-sm text-gray-600">{quote.customer.phone}</p>
                         )}
                     </Link>
-                </div>
+                </Card>
 
-                <div className="section-card">
+                <Card variant="section">
                     <div className="flex items-center gap-2 mb-4">
                         <Calendar size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Dates</h3>
@@ -170,20 +183,16 @@ function RouteComponent() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </Card>
 
-                <div className="section-card">
+                <Card variant="section">
                     <div className="flex items-center gap-2 mb-4">
                         <Receipt size={20} className="text-gray-400"/>
                         <h3 className="section-card-title">Factures</h3>
                     </div>
                     {quote.invoices.length > 0 ? (
                         <div className="space-y-2">
-                            {quote.invoices.map(invoice => {
-                                const total = invoice.lines.reduce((sum, line) =>
-                                    sum + line.unitPrice * line.quantity, 0
-                                );
-                                return (
+                            {quote.invoices.map(invoice => (
                                     <Link
                                         key={invoice.id}
                                         to="/invoices/$invoiceId"
@@ -194,30 +203,30 @@ function RouteComponent() {
                                             <span className="text-sm font-medium text-gray-900">
                                                 Facture n°{invoice.num}
                                             </span>
-                                            <span
-                                                className={`text-xs px-2 py-0.5 rounded ${statusColors[invoice.status]}`}>
-                                                {statusLabels[invoice.status]}
-                                            </span>
+                                            <StatusBadge status={invoice.status} />
                                         </div>
-                                        <p className="text-xs text-gray-600 mt-1">{total.toFixed(2)}€</p>
+                                        <p className="text-xs text-gray-600 mt-1">{calculateTotal(invoice.lines).toFixed(2)}€</p>
                                     </Link>
-                                );
-                            })}
+                            ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400">Aucune facture liée</p>
+                        <EmptyState 
+                            icon={Receipt}
+                            iconSize={32}
+                            message="Aucune facture liée"
+                        />
                     )}
-                </div>
+                </Card>
             </div>
 
             {quote.notes && (
-                <div className="section-card mb-6">
+                <Card variant="section" className="mb-6">
                     <h3 className="section-card-title mb-3">Notes</h3>
                     <p className="text-gray-700 whitespace-pre-wrap">{quote.notes}</p>
-                </div>
+                </Card>
             )}
 
-            <div className="section-card mb-4">
+            <Card variant="section" className="mb-4">
                 <div className="flex items-center gap-2 mb-4">
                     <FileText size={20} className="text-gray-400"/>
                     <h3 className="section-card-title">Détail du devis</h3>
@@ -253,13 +262,13 @@ function RouteComponent() {
                         <tr>
                             <td colSpan={3} className="p-4 text-right font-semibold text-gray-700">Total HT</td>
                             <td className="p-4 text-right font-bold text-blue-600 text-lg">
-                                {quote.totalAmount?.toFixed(2)}€
+                                {quote.totalAmount ? quote.totalAmount.toFixed(2) : calculateTotal(quote.lines).toFixed(2)}€
                             </td>
                         </tr>
                         </tfoot>
                     </table>
                 </div>
-            </div>
+            </Card>
             <div className='flex w-full justify-end gap-4'>
                 {
                     quote.status === 'DRAFT' ? (
@@ -277,11 +286,11 @@ function RouteComponent() {
                     ) : quote.status === 'SENT' && (
                         <>
                             <button type="button" onClick={onAccept}
-                                    className="cursor-pointer bg-green-500 rounded-lg p-2 text-white hover:bg-green-600 active:bg-green-600">
+                                    className="action-btn-success">
                                 Accepter
                             </button>
                             <button type="button" onClick={onDecline}
-                                    className="cursor-pointer bg-red-500 rounded-lg p-2 text-white hover:bg-red-600 active:bg-red-600">
+                                    className="action-btn-danger">
                                 Refuser
                             </button>
                         </>

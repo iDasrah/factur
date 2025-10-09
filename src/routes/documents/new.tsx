@@ -1,12 +1,16 @@
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useMutation, useQuery} from "@tanstack/react-query";
-import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
+import {createFileRoute, useNavigate} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import {ArrowLeft, Plus, Trash2} from "lucide-react";
+import {Plus, Trash2} from "lucide-react";
 import {useId, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {z} from 'zod';
+import BackLink from "@/components/BackLink";
+import Card from "@/components/Card";
+import { FormActions, Input, Select } from "@/components/form";
 import prisma from "@/lib/db.ts";
+import { calculateTotal } from "@/lib/utils";
 
 const documentLineSchema = z.object({
     description: z.string().min(1, "La description est requise"),
@@ -33,9 +37,7 @@ const getCustomers = createServerFn().handler(async () => {
 const createDocument = createServerFn({method: 'POST'})
     .inputValidator((data: DocumentFormData) => data)
     .handler(async ({data}) => {
-        const totalAmount = data.lines.reduce((sum, line) =>
-            sum + line.unitPrice * line.quantity, 0
-        );
+        const totalAmount = calculateTotal(data.lines);
 
         if (data.type === 'quote') {
             const quote = await prisma.quote.create({
@@ -99,7 +101,11 @@ export const Route = createFileRoute('/documents/new')({
 function RouteComponent() {
     const navigate = useNavigate();
     const [documentType, setDocumentType] = useState<'quote' | 'invoice'>('quote');
-    const [documentTypeId, customerId, titleId, linesId, notesId] = useId();
+    const documentTypeId = useId();
+    const customerId = useId();
+    const titleId = useId();
+    const linesId = useId();
+    const notesId = useId();
 
     const { data: customers } = useQuery({
         queryKey: ['customers'],
@@ -132,9 +138,7 @@ function RouteComponent() {
     });
 
     const lines = watch('lines');
-    const total = lines.reduce((sum, line) =>
-        sum + (line.unitPrice || 0) * (line.quantity || 1), 0
-    );
+    const total = calculateTotal(lines);
 
     const onSubmit = (data: DocumentFormData) => {
         createDocMut.mutate({ ...data, type: documentType });
@@ -142,17 +146,11 @@ function RouteComponent() {
 
     return (
         <div className="content">
-            <Link to='/documents'
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-            >
-                <ArrowLeft size={20} />
-                Retour aux documents
-            </Link>
-
+            <BackLink to="/documents" label='Documents' />
             <h2 className="page-title mb-6">Créer un document</h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl">
-                <div className="section-card mb-6">
+                <Card variant="section" className="mb-6">
                     <label htmlFor={documentTypeId} className="label">
                         Type de document *
                     </label>
@@ -180,44 +178,30 @@ function RouteComponent() {
                             Facture
                         </button>
                     </div>
-                </div>
+                </Card>
 
-                <div className="section-card space-y-6">
-                    <div>
-                        <label htmlFor={customerId} className="label">
-                            Client *
-                        </label>
-                        <select
-                            {...register('customerId')}
-                            id={customerId}
-                            className={`input ${
-                                errors.customerId ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        >
-                            <option value="">Sélectionnez un client</option>
-                            {customers?.map(customer => (
-                                <option key={customer.id} value={customer.id}>
-                                    {customer.name}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.customerId && (
-                            <p className="error-message">{errors.customerId.message}</p>
-                        )}
-                    </div>
+                <Card variant="section" className="space-y-6">
+                    <Select
+                        {...register('customerId')}
+                        id={customerId}
+                        label="Client *"
+                        error={errors.customerId?.message}
+                    >
+                        <option value="">Sélectionnez un client</option>
+                        {customers?.map(customer => (
+                            <option key={customer.id} value={customer.id}>
+                                {customer.name}
+                            </option>
+                        ))}
+                    </Select>
 
-                    <div>
-                        <label htmlFor={titleId} className="label">
-                            Titre (optionnel)
-                        </label>
-                        <input
-                            {...register('title')}
-                            id={titleId}
-                            type="text"
-                            placeholder='Ex: Site web vitrine'
-                            className="input border-gray-300"
-                        />
-                    </div>
+                    <Input
+                        {...register('title')}
+                        id={titleId}
+                        type="text"
+                        label="Titre (optionnel)"
+                        placeholder='Ex: Site web vitrine'
+                    />
 
                     <div>
                         <label htmlFor={linesId} className="label">
@@ -230,7 +214,7 @@ function RouteComponent() {
                                         <input
                                             {...register(`lines.${index}.description`)}
                                             placeholder="Description"
-                                            className={`input px-3 py-2 text-sm ${
+                                            className={`input-line ${
                                                 errors.lines?.[index]?.description ? 'border-red-500' : 'border-gray-300'
                                             }`}
                                         />
@@ -246,7 +230,7 @@ function RouteComponent() {
                                             type="number"
                                             step="0.01"
                                             placeholder="Prix"
-                                            className={`input px-3 py-2 text-sm ${
+                                            className={`input-line ${
                                                 errors.lines?.[index]?.unitPrice ? 'border-red-500' : 'border-gray-300'
                                             }`}
                                         />
@@ -256,7 +240,7 @@ function RouteComponent() {
                                             {...register(`lines.${index}.quantity`, { valueAsNumber: true })}
                                             type="number"
                                             placeholder="Qté"
-                                            className={`input px-3 py-2 text-sm ${
+                                            className={`input-line ${
                                                 errors.lines?.[index]?.quantity ? 'border-red-500' : 'border-gray-300'
                                             }`}
                                         />
@@ -265,7 +249,7 @@ function RouteComponent() {
                                         <button
                                             type="button"
                                             onClick={() => remove(index)}
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="btn-delete-line"
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -276,7 +260,7 @@ function RouteComponent() {
                         <button
                             type="button"
                             onClick={() => append({ description: '', unitPrice: 0, quantity: 1 })}
-                            className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="btn-add-line"
                         >
                             <Plus size={18} />
                             Ajouter une ligne
@@ -300,34 +284,18 @@ function RouteComponent() {
 
                     <div className="pt-4 border-t border-gray-200">
                         <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-gray-700">Total HT</span>
+                            <span className="text-lg font-semibold text-gray-700">Prix total</span>
                             <span className="text-2xl font-bold text-blue-600">{total.toFixed(2)}€</span>
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            type="submit"
-                            disabled={createDocMut.isPending}
-                            className="create-btn"
-                        >
-                            {createDocMut.isPending ? 'Création...' : `Créer ${documentType === 'quote' ? 'le devis' : 'la facture'}`}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate({to: '/documents'})}
-                            className="cancel-btn"
-                        >
-                            Annuler
-                        </button>
-                    </div>
-
-                    {createDocMut.isError && (
-                        <p className="text-red-500 text-sm">
-                            Une erreur est survenue lors de la création du document.
-                        </p>
-                    )}
-                </div>
+                    <FormActions
+                        submitLabel={`Créer ${documentType === 'quote' ? 'le devis' : 'la facture'}`}
+                        isSubmitting={createDocMut.isPending}
+                        onCancel={() => navigate({to: '/documents'})}
+                        error={createDocMut.isError ? "Une erreur est survenue lors de la création du document." : undefined}
+                    />
+                </Card>
             </form>
         </div>
     );

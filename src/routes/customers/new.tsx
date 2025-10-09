@@ -1,11 +1,13 @@
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useMutation} from "@tanstack/react-query";
-import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
+import {createFileRoute, useNavigate} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import {ArrowLeft} from "lucide-react";
-import { useId } from 'react';
+import {useId } from 'react';
 import {useForm} from "react-hook-form";
 import {z} from 'zod';
+import BackLink from '@/components/BackLink';
+import Card from '@/components/Card';
+import { FormActions, Input } from '@/components/form';
 import prisma from "@/lib/db.ts";
 
 const customerSchema = z.object({
@@ -54,7 +56,12 @@ export const Route = createFileRoute('/customers/new')({
 
 function RouteComponent() {
     const navigate = useNavigate();
-    const [nameId, streetId, cityId, postalCodeId, emailId, phoneId] = useId();
+    const nameId = useId();
+    const streetId = useId();
+    const cityId = useId();
+    const postalCodeId = useId();
+    const emailId = useId();
+    const phoneId = useId();
 
     const createClientMut = useMutation({
         mutationKey: ['create', 'customer'],
@@ -74,157 +81,83 @@ function RouteComponent() {
 
     return (
         <div className="content">
-            <Link
-                to='/customers'
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-            >
-                <ArrowLeft size={20} />
-                Retour aux clients
-            </Link>
-
+            <BackLink to="/customers" label='Clients' />
             <h2 className="page-title mb-6">Créer un client</h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
-                <div className="section-card space-y-6">
-                    <div>
-                        <label htmlFor={nameId} className="label">
-                            Nom / Raison sociale *
-                        </label>
-                        <input
-                            {...register('name')}
-                            id={nameId}
-                            type="text"
-                            placeholder='Ex: ACME Corp'
-                            className={`input ${
-                                errors.name ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        />
-                        {errors.name && (
-                            <p className="error-message">{errors.name.message}</p>
-                        )}
-                    </div>
+                <Card variant="section" className="space-y-6">
+                    <Input
+                        {...register('name')}
+                        id={nameId}
+                        type="text"
+                        label="Nom / Raison sociale *"
+                        placeholder='Ex: ACME Corp'
+                        error={errors.name?.message}
+                    />
 
                     <div>
-                        <p className="text-sm font-medium text-gray-700 mb-3">Adresse *</p>
+                        <p className="label-section">Adresse *</p>
 
                         <div className="space-y-4">
-                            <div>
-                                <label htmlFor={streetId} className="address-label">
-                                    Numéro et rue
-                                </label>
-                                <input
-                                    {...register('street')}
-                                    id={streetId}
-                                    type="text"
-                                    placeholder='Ex: 3 Rue Principale'
-                                    className={`input ${
-                                        errors.street ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                />
-                                {errors.street && (
-                                    <p className="error-message">{errors.street.message}</p>
-                                )}
-                            </div>
+                            <Input
+                                {...register('street')}
+                                id={streetId}
+                                type="text"
+                                label="Numéro et rue"
+                                placeholder='Ex: 3 Rue Principale'
+                                error={errors.street?.message}
+                                className="!mt-0"
+                            />
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor={postalCodeId} className="address-label">
-                                        Code postal
-                                    </label>
-                                    <input
-                                        {...register('postalCode')}
-                                        id={postalCodeId}
-                                        type="text"
-                                        placeholder='75008'
-                                        className={`input ${
-                                            errors.postalCode ? 'border-red-500' : 'border-gray-300'
-                                        }`}
-                                    />
-                                    {errors.postalCode && (
-                                        <p className="error-message">{errors.postalCode.message}</p>
-                                    )}
-                                </div>
+                                <Input
+                                    {...register('postalCode')}
+                                    id={postalCodeId}
+                                    type="text"
+                                    label="Code postal"
+                                    placeholder='75008'
+                                    error={errors.postalCode?.message}
+                                    className="!mt-0"
+                                />
 
-                                <div>
-                                    <label htmlFor={cityId} className="address-label">
-                                        Ville
-                                    </label>
-                                    <input
-                                        {...register('city')}
-                                        id={cityId}
-                                        type="text"
-                                        placeholder='Paris'
-                                        className={`input ${
-                                            errors.city ? 'border-red-500' : 'border-gray-300'
-                                        }`}
-                                    />
-                                    {errors.city && (
-                                        <p className="error-message">{errors.city.message}</p>
-                                    )}
-                                </div>
+                                <Input
+                                    {...register('city')}
+                                    id={cityId}
+                                    type="text"
+                                    label="Ville"
+                                    placeholder='Paris'
+                                    error={errors.city?.message}
+                                    className="!mt-0"
+                                />
                             </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor={emailId} className="label">
-                            Email
-                        </label>
-                        <input
-                            {...register('email')}
-                            id={emailId}
-                            type="email"
-                            placeholder='contact@acme.com'
-                            className={`input ${
-                                errors.email ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        />
-                        {errors.email && (
-                            <p className="error-message">{errors.email.message}</p>
-                        )}
-                    </div>
+                    <Input
+                        {...register('email')}
+                        id={emailId}
+                        type="email"
+                        label="Email"
+                        placeholder='contact@acme.com'
+                        error={errors.email?.message}
+                    />
 
-                    <div>
-                        <label htmlFor={phoneId} className="label">
-                            Téléphone
-                        </label>
-                        <input
-                            {...register('phone')}
-                            id={phoneId}
-                            type="tel"
-                            placeholder='01 23 45 67 89'
-                            className={`input ${
-                                errors.phone ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        />
-                        {errors.phone && (
-                            <p className="error-message">{errors.phone.message}</p>
-                        )}
-                    </div>
+                    <Input
+                        {...register('phone')}
+                        id={phoneId}
+                        type="tel"
+                        label="Téléphone"
+                        placeholder='01 23 45 67 89'
+                        error={errors.phone?.message}
+                    />
 
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            type="submit"
-                            disabled={createClientMut.isPending}
-                            className="create-btn"
-                        >
-                            {createClientMut.isPending ? 'Création...' : 'Créer le client'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate({to: '/customers'})}
-                            className="cancel-btn"
-                        >
-                            Annuler
-                        </button>
-                    </div>
-
-                    {createClientMut.isError && (
-                        <p className="text-red-500 text-sm">
-                            Une erreur est survenue lors de la création du client.
-                        </p>
-                    )}
-                </div>
+                    <FormActions
+                        submitLabel="Créer le client"
+                        isSubmitting={createClientMut.isPending}
+                        onCancel={() => navigate({to: '/customers'})}
+                        error={createClientMut.isError ? "Une erreur est survenue lors de la création du client." : undefined}
+                    />
+                </Card>
             </form>
         </div>
     );

@@ -1,15 +1,15 @@
-import {$Enums} from "@prisma/client";
 import {createFileRoute, Link} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import {Check, Eye, Plus, Send, UserMinus, UserPen, UserPlus, X} from "lucide-react";
+import {endOfMonth, startOfMonth, subMonths} from "date-fns";
+import {Check, Eye, Plus, Send, X} from "lucide-react";
+import { ActivityCard } from "@/components/ActivityCard";
+import Card from "@/components/Card.tsx";
+import EmptyState from "@/components/EmptyState";
+import StatCard from "@/components/StatCard.tsx";
+import { UnpaidInvoiceCard } from "@/components/UnpaidInvoiceCard";
 import prisma from "@/lib/db.ts";
-
-import ActivityType = $Enums.ActivityType;
-
-import {endOfMonth, formatDistanceToNow, startOfMonth, subMonths} from "date-fns";
-import {fr as frLocale} from 'date-fns/locale';
-import type {Record} from "effect/Schema";
-import type {ReactNode} from "react";
+import { calculateRevenues, calculateTotalRevenue } from "@/lib/revenueHelpers";
+import { calculateTotal, formatRelativeDate } from "@/lib/utils";
 
 const getData = createServerFn().handler(async () => {
     const now = new Date();
@@ -48,7 +48,7 @@ const getData = createServerFn().handler(async () => {
         prisma.quote.findMany({
             where: {status: 'SENT'},
             take: 3,
-            include: {customer: true},
+            include: {customer: true, lines: true},
             orderBy: {expirationDate: 'asc'}
         }),
 
@@ -89,29 +89,11 @@ const getData = createServerFn().handler(async () => {
         declined: declinedCount
     }
 
-    let current = 0;
-    let invoiced = 0;
-    let pending = 0;
+    // Calcul des revenus du mois en cours
+    const { total: current, invoiced, pending } = calculateRevenues(currentMonthInvoices);
 
-    currentMonthInvoices.forEach(invoice => {
-        const total = invoice.lines.reduce((sum, line) =>
-            sum + line.unitPrice * line.quantity, 0
-        );
-
-        current += total;
-
-        if (invoice.status === 'PAID') {
-            invoiced += total;
-        } else if (invoice.status === 'UNPAID') {
-            pending += total;
-        }
-    });
-
-    const lastMonthRevenues = lastMonthInvoices.reduce((sum, invoice) => {
-        return sum + invoice.lines.reduce((s, line) =>
-            s + line.unitPrice * line.quantity, 0
-        );
-    }, 0);
+    // Calcul des revenus du mois dernier
+    const lastMonthRevenues = calculateTotalRevenue(lastMonthInvoices);
 
     return {
         stats,
@@ -132,33 +114,6 @@ export const Route = createFileRoute('/')({
     loader: () => getData(),
 })
 
-const activityIcons: Record<ActivityType, ReactNode> = {
-    QUOTE_CREATED: <Plus className="text-blue-500"/>,
-    QUOTE_SENT: <Send className="text-blue-500"/>,
-    QUOTE_ACCEPTED: <Check className="text-green-500"/>,
-    QUOTE_DECLINED: <X className="text-red-500"/>,
-    INVOICE_CREATED: <Plus className="text-blue-500"/>,
-    INVOICE_SENT: <Send className="text-blue-500"/>,
-    INVOICE_PAID: <Check className="text-green-500"/>,
-    INVOICE_CANCELLED: <X className="text-red-500"/>,
-    CUSTOMER_CREATED: <UserPlus className="text-blue-500"/>,
-    CUSTOMER_DELETED: <UserMinus className="text-red-500"/>,
-    CUSTOMER_EDITED: <UserPen className="text-orange-500"/>,
-}
-
-const activityText: Record<ActivityType, (id: string) => string> = {
-    QUOTE_CREATED: (num) => `Devis n°${num} créé`,
-    QUOTE_SENT: (num) => `Devis n°${num} envoyé`,
-    QUOTE_ACCEPTED: (num) => `Devis n°${num} accepté`,
-    QUOTE_DECLINED: (num) => `Devis n°${num} refusé`,
-    INVOICE_CREATED: (num) => `Facture n°${num} créée`,
-    INVOICE_SENT: (num) => `Facture n°${num} envoyée`,
-    INVOICE_PAID: (num) => `Facture n°${num} payée`,
-    INVOICE_CANCELLED: (num) => `Facture n°${num} annulée`,
-    CUSTOMER_CREATED: (name) => `Client ${name} créé`,
-    CUSTOMER_DELETED: (name) => `Client ${name} supprimé`,
-    CUSTOMER_EDITED: (name) => `Client ${name} modifié`,
-}
 
 function App() {
     const {stats, recentActivity, pendingQuotes, unpaidInvoices, revenues} = Route.useLoaderData();
@@ -168,49 +123,43 @@ function App() {
     return <div className="content">
         <h1 className="page-title">Tableau de bord</h1>
         <section className="flex flex-col gap-4 md:flex-row mb-5">
-            <div className="stat-card flex-1">
-                <div className="stat-card-header">
-                    <div className="stat-card-title">
-                        <Send className="stat-card-header-icon" size={32} strokeWidth={1}/>
-                        <h3>Devis envoyés</h3>
-                    </div>
-
-                    <Link to="/documents" search={{quoteStatus: ['SENT']}} className="stat-card-view">
+            <StatCard
+                title="Devis envoyés"
+                icon={Send}
+                value={stats.sent}
+                valueColor="text-blue-500"
+                action={
+                    <Link to="/documents" search={{quoteStatus: ['SENT']}}>
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
-                </div>
-                <p className="stat-card-stat text-blue-500">{stats.sent}</p>
-            </div>
-            <div className="stat-card flex-1">
-                <div className="stat-card-header">
-                    <div className="stat-card-title">
-                        <Check className="stat-card-header-icon" size={32} strokeWidth={1}/>
-                        <h3>Devis acceptés</h3>
-                    </div>
-
-                    <Link to="/documents" search={{quoteStatus: ['ACCEPTED']}} className="stat-card-view">
+                }
+            />
+            <StatCard
+                title="Devis acceptés"
+                icon={Check}
+                value={stats.accepted}
+                valueColor="text-green-500"
+                action={
+                    <Link to="/documents" search={{quoteStatus: ['ACCEPTED']}}>
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
-                </div>
-                <p className="stat-card-stat text-green-500">{stats.accepted}</p>
-            </div>
-            <div className="stat-card flex-1">
-                <div className="stat-card-header">
-                    <div className="stat-card-title">
-                        <X className="stat-card-header-icon" size={32} strokeWidth={1}/>
-                        <h3>Devis refusés</h3>
-                    </div>
-
-                    <Link to="/documents" search={{quoteStatus: ['DECLINED']}} className="stat-card-view">
+                }
+            />
+            <StatCard
+                title="Devis refusés"
+                icon={X}
+                value={stats.declined}
+                valueColor="text-red-500"
+                action={
+                    <Link to="/documents" search={{quoteStatus: ['DECLINED']}}>
                         <Eye strokeWidth={1} className="text-gray-600 hover:text-gray-500"/>
                     </Link>
-                </div>
-                <p className="stat-card-stat text-red-500">{stats.declined}</p>
-            </div>
+                }
+            />
         </section>
 
         <div className="flex flex-col md:flex-row gap-4">
-            <section className="section-card mb-4 flex-1">
+            <Card variant="section" className="mb-4 flex-1">
                 <h2 className="section-card-title">Chiffre d'affaires</h2>
                 <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-bold text-blue-600">{revenues.current}€</p>
@@ -219,16 +168,16 @@ function App() {
                 </div>
                 <div className="flex gap-12">
                     <div>
-                        <p className="text-sm text-gray-500">Facturé</p>
+                        <p className="text-label">Facturé</p>
                         <p className="text-2xl font-semibold text-gray-800">{revenues.invoiced}€</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500">En attente</p>
+                        <p className="text-label">En attente</p>
                         <p className="text-2xl font-semibold text-orange-500">{revenues.pending}€</p>
                     </div>
                 </div>
-            </section>
-            <section className="section-card flex-1/4 mb-4">
+            </Card>
+            <Card variant="section" className="flex-1/4 mb-4">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Factures impayées</h2>
                     <Link to='/documents' search={{invoiceStatus: ['UNPAID']}}
@@ -237,92 +186,40 @@ function App() {
                 <div className="space-y-3 mt-3">
                     {
                         unpaidInvoices.length > 0 ?
-                            unpaidInvoices.map((invoice) => {
-                                    const now = new Date();
-                                    const dueDate = new Date(invoice.dueDate);
-                                    const diffTime = now.getTime() - dueDate.getTime();
-                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                    const isLate = diffDays > 0;
-                                    const totalAmount = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-
-                                    return <Link to="/invoices/$invoiceId" params={{invoiceId: invoice.id}}
-                                                 key={invoice.num}
-                                                 className={`flex items-center justify-between p-3 border-l-4 ${isLate ? 'border-red-500 bg-red-50 hover:bg-red-50/75' : 'border-orange-500 bg-orange-50 hover:bg-orange-50/75'} rounded`}>
-                                        <div>
-                                            <p className="font-medium">Facture #{invoice.num}</p>
-                                            <p className="text-sm text-gray-600">{invoice.customer.name}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-semibold text-gray-800">{totalAmount}€</p>
-                                            <p className={`text-xs ${isLate ? 'text-red-600' : 'text-orange-600'}`}>
-                                                {isLate
-                                                    ? `Retard: ${formatDistanceToNow(dueDate, {locale: frLocale})}`
-                                                    : `Échéance: dans ${formatDistanceToNow(dueDate, {locale: frLocale})}`
-                                                }
-                                            </p>
-                                        </div>
-                                    </Link>
-                                }
-                            ) : (
-                                <p className="font-light text-gray-400">Aucune facture impayée.</p>
+                            unpaidInvoices.map((invoice) => (
+                                <UnpaidInvoiceCard key={invoice.num} invoice={invoice} />
+                            )) : (
+                                <EmptyState 
+                                    icon={Eye}
+                                    iconSize={32}
+                                    message="Aucune facture impayée."
+                                    className="py-8"
+                                />
                             )
                     }
                 </div>
-            </section>
+            </Card>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
-            <section className="section-card flex-1">
+            <Card variant="section" className="flex-1">
                 <h2 className="section-card-title">Activité récente</h2>
                 <div className="space-y-3 mt-3">
                     {
-                        recentActivity.length > 0 ? recentActivity.map((activity) => {
-                                const activityType = activity.type.split('_')[0];
-
-                                const getActivityLink = () => {
-                                    switch (activityType) {
-                                        case 'CUSTOMER':
-                                            return activity.customerId ? {
-                                                to: '/customers/$customerId' as const,
-                                                params: {customerId: activity.customerId}
-                                            } : null;
-                                        case 'QUOTE':
-                                            return activity.quoteId ? {
-                                                to: '/quotes/$quoteId' as const,
-                                                params: {quoteId: activity.quoteId}
-                                            } : null;
-                                        case 'INVOICE':
-                                            return activity.invoiceId ? {
-                                                to: '/invoices/$invoiceId' as const,
-                                                params: {invoiceId: activity.invoiceId}
-                                            } : null;
-                                        default:
-                                            return null;
-                                    }
-                                };
-
-                                const linkConfig = getActivityLink();
-
-                                if (!linkConfig) return null;
-
-                                return <Link to={linkConfig.to} params={linkConfig.params} key={activity.id}
-                                             className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                                    {activityIcons[activity.type]}
-                                    <div className="flex-1">
-                                        <p className="font-medium">{activityText[activity.type](activity.quote?.num || activity.invoice?.num || activity.customer?.name || activity.customer?.id || '')}</p>
-                                        <p className="text-sm text-gray-500"></p>
-                                    </div>
-                                    <span
-                                        className="text-xs text-gray-400">{formatDistanceToNow(activity.createdAt, {locale: frLocale})}</span>
-                                </Link>
-                            }
-                        ) : (
-                            <p className="font-light text-gray-400">Aucune activité récente.</p>
+                        recentActivity.length > 0 ? recentActivity.map((activity) => (
+                            <ActivityCard key={activity.id} activity={activity} />
+                        )) : (
+                            <EmptyState 
+                                icon={Plus}
+                                iconSize={32}
+                                message="Aucune activité récente."
+                                className="py-8"
+                            />
                         )
                     }
                 </div>
-            </section>
-            <section className="section-card flex-1">
+            </Card>
+            <Card variant="section" className="flex-1">
                 <div className="flex justify-between items-center">
                     <h2 className="section-card-title">Devis en attente</h2>
                     <Link to='/documents' search={{quoteStatus: ['SENT']}} className="text-gray-500 hover:underline">Voir
@@ -337,22 +234,26 @@ function App() {
                                     return <Link to='/quotes/$quoteId' params={{quoteId: quote.id}} key={quote.num}
                                                  className="flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50">
                                         <div>
-                                            <p className="font-medium">Devis #{quote.num}</p>
-                                            <p className="text-sm text-gray-500">{quote.customer.name}</p>
+                                            <p className="text-value">Devis #{quote.num}</p>
+                                            <p className="text-muted">{quote.customer.name}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-gray-800">{quote.totalAmount}€</p>
-                                            <p className="text-xs text-orange-500">Expire
-                                                dans {formatDistanceToNow(dueDate, {locale: frLocale})}</p>
+                                            <p className="font-semibold text-gray-800">{quote.totalAmount ? quote.totalAmount.toFixed(2) : calculateTotal(quote.lines).toFixed(2)}€</p>
+                                            <p className="text-xs text-orange-500">Expire {formatRelativeDate(dueDate)}</p>
                                         </div>
                                     </Link>
                                 }
                             ) : (
-                                <p className="font-light text-gray-400">Aucun devis en attente.</p>
+                                <EmptyState 
+                                    icon={Send}
+                                    iconSize={32}
+                                    message="Aucun devis en attente."
+                                    className="py-8"
+                                />
                             )
                     }
                 </div>
-            </section>
+            </Card>
         </div>
     </div>
 }

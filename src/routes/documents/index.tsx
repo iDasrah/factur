@@ -4,10 +4,14 @@ import {createServerFn} from "@tanstack/react-start";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
 import {FileText, Receipt, Search, SlidersHorizontal, X} from "lucide-react";
-import {useMemo} from "react";
 import { z } from 'zod';
+import Card from "@/components/Card.tsx";
+import EmptyState from "@/components/EmptyState";
+import StatusBadge from "@/components/StatusBadge";
+import { useDocumentFilter, useInvoiceStatusToggle, useQuoteStatusToggle } from "@/hooks";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
 import prisma from "@/lib/db.ts";
+import {calculateTotal} from "@/lib/utils.ts";
 
 const getData = createServerFn().handler(async () => {
     const [invoices, quotes] = await Promise.all([
@@ -20,7 +24,8 @@ const getData = createServerFn().handler(async () => {
         }),
         prisma.quote.findMany({
             include: {
-                customer: true
+                customer: true,
+                lines: true
             },
             orderBy: { emitDate: 'desc' }
         })
@@ -47,65 +52,22 @@ function RouteComponent() {
     const { quoteSearch, quoteStatus, invoiceSearch, invoiceStatus } = Route.useSearch();
     const router = useRouter();
 
-    const filteredQuotes = useMemo(() => {
-        return quotes.filter(quote => {
-            const matchSearch = !quoteSearch ||
-                quote.num.toLowerCase().includes(quoteSearch.toLowerCase()) ||
-                quote.customer.name.toLowerCase().includes(quoteSearch.toLowerCase()) ||
-                quote.title?.toLowerCase().includes(quoteSearch.toLowerCase());
+    const filteredQuotes = useDocumentFilter(quotes, quoteSearch, quoteStatus);
+    const filteredInvoices = useDocumentFilter(invoices, invoiceSearch, invoiceStatus);
 
-            const matchStatus = quoteStatus.length === 0 ||
-                quoteStatus.includes(quote.status);
+    const toggleQuoteStatus = useQuoteStatusToggle(quoteStatus, {
+        quoteSearch,
+        quoteStatus,
+        invoiceSearch,
+        invoiceStatus
+    });
 
-            return matchSearch && matchStatus;
-        });
-    }, [quotes, quoteSearch, quoteStatus]);
-
-    const filteredInvoices = useMemo(() => {
-        return invoices.filter(invoice => {
-            const matchSearch = !invoiceSearch ||
-                invoice.num.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-                invoice.customer.name.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-                invoice.title?.toLowerCase().includes(invoiceSearch.toLowerCase());
-
-            const matchStatus = invoiceStatus.length === 0 ||
-                invoiceStatus.includes(invoice.status);
-
-            return matchSearch && matchStatus;
-        });
-    }, [invoices, invoiceSearch, invoiceStatus]);
-
-    const toggleQuoteStatus = (status: $Enums.QuoteStatus) => {
-        const newStatus = quoteStatus.includes(status)
-            ? quoteStatus.filter(s => s !== status)
-            : [...quoteStatus, status];
-
-        router.navigate({
-            to: '/documents',
-            search: {
-                quoteStatus: newStatus,
-                invoiceStatus,
-                quoteSearch,
-                invoiceSearch
-            }
-        });
-    };
-
-    const toggleInvoiceStatus = (status: $Enums.InvoiceStatus) => {
-        const newStatus = invoiceStatus.includes(status)
-            ? invoiceStatus.filter(s => s !== status)
-            : [...invoiceStatus, status];
-
-        router.navigate({
-            to: '/documents',
-            search: {
-                invoiceStatus: newStatus,
-                quoteStatus,
-                quoteSearch,
-                invoiceSearch
-            }
-        });
-    };
+    const toggleInvoiceStatus = useInvoiceStatusToggle(invoiceStatus, {
+        quoteSearch,
+        quoteStatus,
+        invoiceSearch,
+        invoiceStatus
+    });
 
     return (
         <div className="content">
@@ -165,45 +127,43 @@ function RouteComponent() {
                     </div>
 
                     {filteredQuotes.length > 0 ? (
-                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                        <div className="flex flex-col gap-2 max-h-140 overflow-y-auto pr-2">
                             {filteredQuotes.map(quote => (
                                 <Link
                                     to="/quotes/$quoteId"
                                     params={{quoteId: quote.id}}
                                     key={quote.num}
-                                    className="document-card"
                                 >
-                                    <div className="document-card-header">
-                                        <div>
-                                            <h4 className="document-card-num">Devis n°{quote.num}</h4>
-                                            <p className="text-sm text-gray-700">{quote.customer.name}</p>
+                                    <Card variant="document">
+                                        <div className="list-item-header mb-2">
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900">Devis n°{quote.num}</h4>
+                                                <p className="text-muted">{quote.customer.name}</p>
+                                            </div>
+                                            <StatusBadge status={quote.status} />
                                         </div>
-                                        <span className={`document-status ${statusColors[quote.status]}`}>
-                                            {statusLabels[quote.status]}
-                                        </span>
-                                    </div>
-                                    {quote.title && (
-                                        <p className="document-title">{quote.title}</p>
-                                    )}
-                                    <div className="document-card-footer">
-                                        <p className="document-date">
-                                            {formatDate(new Date(quote.emitDate), 'd MMM yyyy', {locale: frLocale})}
-                                        </p>
-                                        <p className="document-amount">{quote.totalAmount}€</p>
-                                    </div>
+                                        {quote.title && (
+                                            <p className="text-muted mb-2">{quote.title}</p>
+                                        )}
+                                        <div className="flex items-center justify-between text-sm">
+                                            <p className="text-gray-500">
+                                                {formatDate(new Date(quote.emitDate), 'd MMM yyyy', {locale: frLocale})}
+                                            </p>
+                                            <p className="font-semibold text-gray-900">{quote.totalAmount ? quote.totalAmount.toFixed(2) : calculateTotal(quote.lines).toFixed(2)}€</p>
+                                        </div>
+                                    </Card>
                                 </Link>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-12">
-                            <FileText className="mx-auto text-gray-300 mb-2" size={40}/>
-                            <p className="text-gray-400">
-                                {quoteSearch || quoteStatus.length > 0
-                                    ? "Aucun devis ne correspond à votre recherche"
-                                    : "Aucun devis trouvé"
-                                }
-                            </p>
-                        </div>
+                        <EmptyState 
+                            icon={FileText}
+                            iconSize={40}
+                            message={quoteSearch || quoteStatus.length > 0
+                                ? "Aucun devis ne correspond à votre recherche"
+                                : "Aucun devis trouvé"
+                            }
+                        />
                     )}
                 </section>
 
@@ -257,51 +217,45 @@ function RouteComponent() {
                     </div>
 
                     {filteredInvoices.length > 0 ? (
-                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                            {filteredInvoices.map(invoice => {
-                                const total = invoice.lines?.reduce((sum, line) =>
-                                    sum + line.unitPrice * line.quantity, 0
-                                ) || 0;
-
-                                return (
+                        <div className="flex flex-col gap-2 max-h-140 overflow-y-auto pr-2">
+                            {filteredInvoices.map(invoice => 
+                                (
                                     <Link
                                         to="/invoices/$invoiceId"
                                         params={{invoiceId: invoice.id}}
                                         key={invoice.num}
-                                        className="document-card"
                                     >
-                                        <div className="document-card-header">
-                                            <div>
-                                                <h4 className="document-card-num">Facture n°{invoice.num}</h4>
-                                                <p className="text-sm text-gray-700">{invoice.customer.name}</p>
+                                        <Card variant="document">
+                                            <div className="list-item-header mb-2">
+                                                <div>
+                                                    <h4 className="font-semibold text-gray-900">Facture n°{invoice.num}</h4>
+                                                    <p className="text-muted">{invoice.customer.name}</p>
+                                                </div>
+                                                <StatusBadge status={invoice.status} />
                                             </div>
-                                            <span className={`document-status ${statusColors[invoice.status]}`}>
-                                                {statusLabels[invoice.status]}
-                                            </span>
-                                        </div>
-                                        {invoice.title && (
-                                            <p className="document-title">{invoice.title}</p>
-                                        )}
-                                        <div className="document-card-footer">
-                                            <p className="document-date">
-                                                {formatDate(new Date(invoice.emitDate), 'd MMM yyyy', {locale: frLocale})}
-                                            </p>
-                                            <p className="document-amount">{total}€</p>
-                                        </div>
+                                            {invoice.title && (
+                                                <p className="text-muted mb-2">{invoice.title}</p>
+                                            )}
+                                            <div className="flex items-center justify-between text-sm">
+                                                <p className="text-gray-500">
+                                                    {formatDate(new Date(invoice.emitDate), 'd MMM yyyy', {locale: frLocale})}
+                                                </p>
+                                                <p className="font-semibold text-gray-900">{calculateTotal(invoice.lines).toFixed(2)}€</p>
+                                            </div>
+                                        </Card>
                                     </Link>
-                                );
-                            })}
+                                )
+                            )}
                         </div>
                     ) : (
-                        <div className="text-center py-12">
-                            <Receipt className="mx-auto text-gray-300 mb-2" size={40}/>
-                            <p className="text-gray-400">
-                                {invoiceSearch || invoiceStatus.length > 0
-                                    ? "Aucune facture ne correspond à votre recherche"
-                                    : "Aucune facture trouvée"
-                                }
-                            </p>
-                        </div>
+                        <EmptyState 
+                            icon={Receipt}
+                            iconSize={40}
+                            message={invoiceSearch || invoiceStatus.length > 0
+                                ? "Aucune facture ne correspond à votre recherche"
+                                : "Aucune facture trouvée"
+                            }
+                        />
                     )}
                 </section>
             </div>

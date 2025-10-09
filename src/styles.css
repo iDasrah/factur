@@ -6,6 +6,20 @@
 }
 
 @layer components {
+    /* --------------------------------------
+       Layout & Structure
+       -------------------------------------- */
+    .content {
+        @apply w-full p-4;
+    }
+
+    .grid-3-cols {
+        @apply grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6;
+    }
+
+    /* --------------------------------------
+       Navigation
+       -------------------------------------- */
     .sidebar-section {
         @apply border-b-2 border-gray-200 p-4 flex flex-col justify-center items-center lg:block;
     }
@@ -26,38 +40,32 @@
         @apply flex items-center p-4 gap-4 active:bg-blue-700 text-white w-full transition-colors duration-150;
     }
 
-    .content {
-        @apply w-full p-4;
-    }
-
+    /* --------------------------------------
+       Typography
+       -------------------------------------- */
     .page-title {
         @apply font-bold text-2xl mb-4;
     }
 
-    .stat-card {
-        @apply bg-white rounded-lg border-1 border-gray-100 p-4;
+    .text-label {
+        @apply text-sm text-gray-500;
     }
 
-    .stat-card-header {
-        @apply flex justify-between items-center;
+    .text-value {
+        @apply font-medium text-gray-900;
     }
 
-    .stat-card-header-icon {
-        @apply text-blue-600 rounded-lg bg-blue-100 p-1;
+    .text-muted {
+        @apply text-sm text-gray-600;
     }
 
-    .stat-card-title {
-        @apply text-lg font-semibold flex items-center gap-4;
+    .text-link {
+        @apply text-sm font-medium text-gray-900;
     }
 
-    .stat-card-view {
-        @apply active:bg-gray-100 p-1 rounded-full transition-colors duration-150;
-    }
-
-    .stat-card-stat {
-        @apply text-3xl mt-6;
-    }
-
+    /* --------------------------------------
+       Cards & Sections
+       -------------------------------------- */
     .section-card {
         @apply bg-white rounded-lg p-4 border border-gray-100;
     }
@@ -66,48 +74,104 @@
         @apply text-xl font-semibold;
     }
 
+    .card-section-header {
+        @apply flex items-center gap-2 mb-4;
+    }
+
+    .card-section-icon {
+        @apply text-gray-400;
+    }
+
     .customer-card-info {
         @apply flex items-start gap-2 text-gray-600;
     }
 
-    .document-card {
-        @apply block p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200;
+    .info-box {
+        @apply mt-4 p-3 bg-blue-50 rounded-lg;
     }
 
-    .document-card-header {
-        @apply flex items-start justify-between mb-2;
+    /* --------------------------------------
+       Lists
+       -------------------------------------- */
+    .list-item-card {
+        @apply block p-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors;
     }
 
-    .document-card-num {
-        @apply font-semibold text-gray-900;
+    .list-item-header {
+        @apply flex items-center justify-between mb-1;
     }
 
-    .document-status {
-        @apply px-2 py-1 rounded text-xs font-medium;
+    /* --------------------------------------
+       Tables
+       -------------------------------------- */
+    .data-table {
+        @apply w-full bg-white border border-gray-200 rounded-lg;
     }
 
-    .document-title {
-        @apply text-sm text-gray-600 mb-2;
+    .table-header {
+        @apply bg-gray-50 border-b border-gray-200;
     }
 
-    .document-card-footer {
-        @apply flex items-center justify-between text-sm;
+    .table-header-cell {
+        @apply p-4 font-semibold text-gray-700;
     }
 
-    .document-date {
-        @apply text-gray-500;
+    .table-body {
+        @apply divide-y divide-gray-200;
     }
 
-    .document-amount {
-        @apply font-semibold text-gray-900;
+    .table-row {
+        @apply hover:bg-gray-50 transition-colors;
     }
 
+    .table-cell {
+        @apply p-4;
+    }
+
+    .table-footer {
+        @apply bg-gray-50 border-t-2 border-gray-300;
+    }
+
+    /* --------------------------------------
+       Buttons
+       -------------------------------------- */
+    .new-btn {
+        @apply p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-600 transition-colors duration-150;
+    }
+
+    .create-btn {
+        @apply px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+    }
+
+    .cancel-btn {
+        @apply cursor-pointer px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors;
+    }
+
+    .action-btn-success {
+        @apply cursor-pointer bg-green-500 rounded-lg p-2 text-white hover:bg-green-600 active:bg-green-600 transition-colors;
+    }
+
+    .action-btn-danger {
+        @apply cursor-pointer bg-red-500 rounded-lg p-2 text-white hover:bg-red-600 active:bg-red-600 transition-colors;
+    }
+
+    /* --------------------------------------
+       Forms
+       -------------------------------------- */
     .input {
         @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
     }
 
+    .input-line {
+        @apply w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+    }
+
     .label {
         @apply block text-sm font-medium text-gray-700 mb-2;
+    }
+
+    .label-section {
+        @apply text-sm font-medium text-gray-700 mb-3;
     }
 
     .address-label {
@@ -118,20 +182,23 @@
         @apply text-red-500 text-sm mt-1;
     }
 
-    .create-btn {
-        @apply px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+    .btn-add-line {
+        @apply mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors;
     }
 
-    .cancel-btn {
-        @apply cursor-pointer px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors
+    .btn-delete-line {
+        @apply p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors;
+    }
+
+    /* --------------------------------------
+       Documents
+       -------------------------------------- */
+    .document-title {
+        @apply text-sm text-gray-600 mb-2;
     }
 
     .document-type {
         @apply flex-1 px-4 py-3 rounded-lg border-2 transition-colors;
-    }
-
-    .new-btn {
-        @apply p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-600 transition-colors duration-150;
     }
 }
 

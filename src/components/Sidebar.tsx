@@ -1,42 +1,15 @@
 import {Link} from "@tanstack/react-router";
-import {File, FilePlus, LayoutDashboard, UserPlus, Users} from "lucide-react";
+import { navLinks } from "@/lib/navigation";
 
 const Sidebar = () => {
     const sections = [
         {
             name: "Général",
-            links: [
-                {
-                    path: "/",
-                    name: "Tableau de bord",
-                    icon: <LayoutDashboard />,
-                },
-                {
-                    path: "/customers",
-                    name: "Clients",
-                    icon: <Users />
-                },
-                {
-                    path: "/documents",
-                    name: "Documents",
-                    icon: <File />,
-                }
-            ]
+            links: [navLinks.dashboard, navLinks.customers, navLinks.documents],
         },
         {
             name: "Outils",
-            links: [
-                {
-                    path: "/documents/new",
-                    name: "Nouveau document",
-                    icon: <FilePlus />,
-                },
-                {
-                    path: "/customers/new",
-                    name: "Nouveau client",
-                    icon: <UserPlus />,
-                }
-            ]
+            links: [navLinks.newDocument, navLinks.newCustomer],
         }
     ]
 
@@ -49,7 +22,7 @@ const Sidebar = () => {
                       <h2 className="sidebar-section-title">{section.name.toUpperCase()}</h2>
                       {section.links.map((link) => (
                           <Link key={link.name} to={link.path} className="sidebar-link">
-                              {link.icon}
+                              <link.icon />
                               <p className="sidebar-link-text">
                                   {link.name}
                               </p>
