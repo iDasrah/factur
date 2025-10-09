@@ -1,11 +1,12 @@
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useMutation} from "@tanstack/react-query";
 import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {z} from 'zod';
-import {useMutation} from "@tanstack/react-query";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
 import {ArrowLeft} from "lucide-react";
+import { useId } from 'react';
+import {useForm} from "react-hook-form";
+import {z} from 'zod';
+import prisma from "@/lib/db.ts";
 
 const customerSchema = z.object({
     name: z.string().min(1, "Le nom est requis"),
@@ -53,6 +54,7 @@ export const Route = createFileRoute('/customers/new')({
 
 function RouteComponent() {
     const navigate = useNavigate();
+    const [nameId, streetId, cityId, postalCodeId, emailId, phoneId] = useId();
 
     const createClientMut = useMutation({
         mutationKey: ['create', 'customer'],
@@ -85,12 +87,12 @@ function RouteComponent() {
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl">
                 <div className="section-card space-y-6">
                     <div>
-                        <label htmlFor='name' className="label">
+                        <label htmlFor={nameId} className="label">
                             Nom / Raison sociale *
                         </label>
                         <input
                             {...register('name')}
-                            id="name"
+                            id={nameId}
                             type="text"
                             placeholder='Ex: ACME Corp'
                             className={`input ${
@@ -107,12 +109,12 @@ function RouteComponent() {
 
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor='street' className="address-label">
+                                <label htmlFor={streetId} className="address-label">
                                     Numéro et rue
                                 </label>
                                 <input
                                     {...register('street')}
-                                    id="street"
+                                    id={streetId}
                                     type="text"
                                     placeholder='Ex: 3 Rue Principale'
                                     className={`input ${
@@ -126,12 +128,12 @@ function RouteComponent() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor='postalCode' className="address-label">
+                                    <label htmlFor={postalCodeId} className="address-label">
                                         Code postal
                                     </label>
                                     <input
                                         {...register('postalCode')}
-                                        id="postalCode"
+                                        id={postalCodeId}
                                         type="text"
                                         placeholder='75008'
                                         className={`input ${
@@ -144,12 +146,12 @@ function RouteComponent() {
                                 </div>
 
                                 <div>
-                                    <label htmlFor='city' className="address-label">
+                                    <label htmlFor={cityId} className="address-label">
                                         Ville
                                     </label>
                                     <input
                                         {...register('city')}
-                                        id="city"
+                                        id={cityId}
                                         type="text"
                                         placeholder='Paris'
                                         className={`input ${
@@ -165,12 +167,12 @@ function RouteComponent() {
                     </div>
 
                     <div>
-                        <label htmlFor='email' className="label">
+                        <label htmlFor={emailId} className="label">
                             Email
                         </label>
                         <input
                             {...register('email')}
-                            id="email"
+                            id={emailId}
                             type="email"
                             placeholder='contact@acme.com'
                             className={`input ${
@@ -183,12 +185,12 @@ function RouteComponent() {
                     </div>
 
                     <div>
-                        <label htmlFor='phone' className="label">
+                        <label htmlFor={phoneId} className="label">
                             Téléphone
                         </label>
                         <input
                             {...register('phone')}
-                            id="phone"
+                            id={phoneId}
                             type="tel"
                             placeholder='01 23 45 67 89'
                             className={`input ${

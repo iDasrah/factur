@@ -1,13 +1,15 @@
-import {createFileRoute, Link} from '@tanstack/react-router'
-import {Check, Eye, Plus, Send, UserMinus, UserPen, UserPlus, X} from "lucide-react";
-import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
 import {$Enums} from "@prisma/client";
+import {createFileRoute, Link} from '@tanstack/react-router'
+import {createServerFn} from "@tanstack/react-start";
+import {Check, Eye, Plus, Send, UserMinus, UserPen, UserPlus, X} from "lucide-react";
+import prisma from "@/lib/db.ts";
+
 import ActivityType = $Enums.ActivityType;
-import {ReactNode} from "react";
+
 import {endOfMonth, formatDistanceToNow, startOfMonth, subMonths} from "date-fns";
 import {fr as frLocale} from 'date-fns/locale';
-import {Record} from "effect/Schema";
+import type {Record} from "effect/Schema";
+import type {ReactNode} from "react";
 
 const getData = createServerFn().handler(async () => {
     const now = new Date();
@@ -274,7 +276,7 @@ function App() {
                 <h2 className="section-card-title">Activité récente</h2>
                 <div className="space-y-3 mt-3">
                     {
-                        recentActivity.length > 0 ? recentActivity.map((activity, i) => {
+                        recentActivity.length > 0 ? recentActivity.map((activity) => {
                                 const activityType = activity.type.split('_')[0];
 
                                 const getActivityLink = () => {
@@ -303,7 +305,7 @@ function App() {
 
                                 if (!linkConfig) return null;
 
-                                return <Link to={linkConfig.to} params={linkConfig.params} key={i}
+                                return <Link to={linkConfig.to} params={linkConfig.params} key={activity.id}
                                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                                     {activityIcons[activity.type]}
                                     <div className="flex-1">

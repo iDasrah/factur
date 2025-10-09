@@ -1,15 +1,13 @@
+import type { QueryClient } from '@tanstack/react-query'
 import {
+  createRootRouteWithContext,
   HeadContent,
   Scripts,
-  createRootRouteWithContext,
 } from '@tanstack/react-router'
-
-import appCss from '../styles.css?url'
-
-import type { QueryClient } from '@tanstack/react-query'
-import {ReactNode} from "react";
-import Sidebar from "@/components/Sidebar.tsx";
+import type {ReactNode} from "react";
 import BottomNav from "@/components/BottomNav.tsx";
+import Sidebar from "@/components/Sidebar.tsx";
+import appCss from '../styles.css?url'
 
 interface MyRouterContext {
   queryClient: QueryClient

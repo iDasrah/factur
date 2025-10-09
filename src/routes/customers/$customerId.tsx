@@ -1,10 +1,10 @@
 import {createFileRoute, Link, notFound} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {Mail, MapPin, Phone, FileText, Receipt, ArrowLeft} from "lucide-react";
 import {formatDate} from "date-fns";
 import { fr as frLocale } from 'date-fns/locale';
+import {ArrowLeft, FileText, Mail, MapPin, Phone, Receipt } from "lucide-react";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
+import prisma from "@/lib/db.ts";
 
 const getData = createServerFn()
     .inputValidator((data: { customerId: string }) => data)

@@ -1,12 +1,12 @@
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useMutation, useQuery} from "@tanstack/react-query";
 import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {z} from 'zod';
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {useFieldArray, useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
 import {ArrowLeft, Plus, Trash2} from "lucide-react";
-import {useState} from "react";
+import {useId, useState} from "react";
+import {useFieldArray, useForm} from "react-hook-form";
+import {z} from 'zod';
+import prisma from "@/lib/db.ts";
 
 const documentLineSchema = z.object({
     description: z.string().min(1, "La description est requise"),
@@ -99,6 +99,7 @@ export const Route = createFileRoute('/documents/new')({
 function RouteComponent() {
     const navigate = useNavigate();
     const [documentType, setDocumentType] = useState<'quote' | 'invoice'>('quote');
+    const [documentTypeId, customerId, titleId, linesId, notesId] = useId();
 
     const { data: customers } = useQuery({
         queryKey: ['customers'],
@@ -152,10 +153,10 @@ function RouteComponent() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl">
                 <div className="section-card mb-6">
-                    <label className="label">
+                    <label htmlFor={documentTypeId} className="label">
                         Type de document *
                     </label>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4" id={documentTypeId}>
                         <button
                             type="button"
                             onClick={() => setDocumentType('quote')}
@@ -183,12 +184,12 @@ function RouteComponent() {
 
                 <div className="section-card space-y-6">
                     <div>
-                        <label htmlFor='customerId' className="label">
+                        <label htmlFor={customerId} className="label">
                             Client *
                         </label>
                         <select
                             {...register('customerId')}
-                            id="customerId"
+                            id={customerId}
                             className={`input ${
                                 errors.customerId ? 'border-red-500' : 'border-gray-300'
                             }`}
@@ -206,12 +207,12 @@ function RouteComponent() {
                     </div>
 
                     <div>
-                        <label htmlFor='title' className="label">
+                        <label htmlFor={titleId} className="label">
                             Titre (optionnel)
                         </label>
                         <input
                             {...register('title')}
-                            id="title"
+                            id={titleId}
                             type="text"
                             placeholder='Ex: Site web vitrine'
                             className="input border-gray-300"
@@ -219,10 +220,10 @@ function RouteComponent() {
                     </div>
 
                     <div>
-                        <label className="label">
+                        <label htmlFor={linesId} className="label">
                             Lignes *
                         </label>
-                        <div className="space-y-3">
+                        <div className="space-y-3" id={linesId}>
                             {fields.map((field, index) => (
                                 <div key={field.id} className="flex gap-3 items-start">
                                     <div className="flex-1/2">
@@ -284,12 +285,12 @@ function RouteComponent() {
 
                     {documentType === 'quote' && (
                         <div>
-                            <label htmlFor='notes' className="label">
+                            <label htmlFor={notesId} className="label">
                                 Notes (optionnel)
                             </label>
                             <textarea
                                 {...register('notes')}
-                                id="notes"
+                                id={notesId}
                                 rows={3}
                                 placeholder="Notes internes..."
                                 className="input border-gray-300"

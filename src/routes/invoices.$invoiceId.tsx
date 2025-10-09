@@ -68,6 +68,7 @@ function RouteComponent() {
         mutationKey: ['pay', invoice.id],
         mutationFn: (data: { invoiceId: string, status: "PAID" | "CANCELLED" }) => setInvoiceStatus({data}),
         onSuccess: () => {
+            router.invalidate();
         }
     });
 

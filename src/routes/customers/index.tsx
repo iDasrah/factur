@@ -1,7 +1,7 @@
 import {createFileRoute, Link} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
 import {Mail, MapPin, Phone, Users} from "lucide-react";
+import prisma from "@/lib/db.ts";
 
 const getData = createServerFn().handler(async () => {
     const customers = await prisma.customer.findMany();

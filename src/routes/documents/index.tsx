@@ -1,13 +1,13 @@
+import {$Enums} from "@prisma/client";
 import {createFileRoute, Link, useRouter} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {FileText, Receipt, Search, SlidersHorizontal, X} from "lucide-react";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
-import {statusColors, statusLabels} from "@/lib/constants.ts";
+import {FileText, Receipt, Search, SlidersHorizontal, X} from "lucide-react";
 import {useMemo} from "react";
 import { z } from 'zod';
-import {$Enums} from "@prisma/client";
+import {statusColors, statusLabels} from "@/lib/constants.ts";
+import prisma from "@/lib/db.ts";
 
 const getData = createServerFn().handler(async () => {
     const [invoices, quotes] = await Promise.all([
@@ -132,6 +132,7 @@ function RouteComponent() {
                         />
                         {quoteSearch && (
                             <button
+                                type="button"
                                 onClick={() => router.navigate({to:'/documents', search: {quoteSearch: '', invoiceSearch, quoteStatus, invoiceStatus}})}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
@@ -148,6 +149,7 @@ function RouteComponent() {
                         <div className="flex flex-wrap gap-2">
                             {['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED'].map((status) => (
                                 <button
+                                    type="button"
                                     key={status}
                                     onClick={() => toggleQuoteStatus(status as $Enums.QuoteStatus)}
                                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
@@ -222,6 +224,7 @@ function RouteComponent() {
                         />
                         {invoiceSearch && (
                             <button
+                                type="button"
                                 onClick={() => router.navigate({to:'/documents', search:{invoiceSearch:'', quoteSearch, quoteStatus, invoiceStatus}})}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
@@ -238,6 +241,7 @@ function RouteComponent() {
                         <div className="flex flex-wrap gap-2">
                             {['UNPAID', 'PAID', 'CANCELLED'].map(status => (
                                 <button
+                                    type="button"
                                     key={status}
                                     onClick={() => toggleInvoiceStatus(status as $Enums.InvoiceStatus)}
                                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
