@@ -1,10 +1,11 @@
-import {createFileRoute, Link, notFound} from '@tanstack/react-router'
+import {useMutation} from "@tanstack/react-query";
+import {createFileRoute, Link, notFound, useRouter} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
+import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
+import prisma from "@/lib/db.ts";
 
 const getData = createServerFn()
     .inputValidator((data: { invoiceId: string }) => data)
@@ -27,6 +28,32 @@ const getData = createServerFn()
         return {invoice};
     });
 
+const setInvoiceStatus = createServerFn()
+    .inputValidator((data: { invoiceId: string, status: "PAID" | "CANCELLED" }) => data)
+    .handler(async ({data}) => {
+        await prisma.invoice.update({
+            where: {
+                id: data.invoiceId
+            },
+            data: {
+                status: data.status
+            }
+        });
+
+        await prisma.activity.create({
+            data: {
+                type: `INVOICE_${data.status}`,
+                quote: {
+                    connect: {
+                        id: data.invoiceId
+                    }
+                }
+            }
+        });
+
+        return {op: data.status.toLowerCase(), quote: data.invoiceId}
+    });
+
 export const Route = createFileRoute('/invoices/$invoiceId')({
     component: RouteComponent,
     loader: ({params}) => getData({data: {invoiceId: params.invoiceId}})
@@ -35,6 +62,22 @@ export const Route = createFileRoute('/invoices/$invoiceId')({
 function RouteComponent() {
     const {invoice} = Route.useLoaderData();
     const total = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+    const router = useRouter();
+
+    const payInvoiceMut = useMutation({
+        mutationKey: ['pay', invoice.id],
+        mutationFn: (data: { invoiceId: string, status: "PAID" | "CANCELLED" }) => setInvoiceStatus({data}),
+        onSuccess: () => {
+        }
+    });
+
+    const onPay = () => {
+        payInvoiceMut.mutate({invoiceId: invoice.id, status: "PAID"});
+    }
+
+    const onCancel = () => {
+        payInvoiceMut.mutate({invoiceId: invoice.id, status: "CANCELLED"});
+    }
 
     return (
         <div className="content">
@@ -177,6 +220,18 @@ function RouteComponent() {
                     </p>
                 </div>
             </div>
+            <button
+                type="button"
+                onClick={onPay}
+                className="cursor-pointer bg-green-500 rounded-lg p-2 text-white hover:bg-green-600 active:bg-green-600">
+                Accepter
+            </button>
+            <button
+                type="button"
+                onClick={onCancel}
+                className="cursor-pointer bg-red-500 rounded-lg p-2 text-white hover:bg-red-600 active:bg-red-600">
+                Refuser
+            </button>
         </div>
     );
 }

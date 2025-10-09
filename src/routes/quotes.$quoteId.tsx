@@ -1,11 +1,11 @@
+import {useMutation} from "@tanstack/react-query";
 import {createFileRoute, Link, notFound, useRouter} from '@tanstack/react-router'
 import {createServerFn} from "@tanstack/react-start";
-import prisma from "@/lib/db.ts";
-import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
 import {formatDate} from "date-fns";
 import {fr as frLocale} from "date-fns/locale/fr";
+import {ArrowLeft, Calendar, FileText, Receipt, User} from "lucide-react";
 import {statusColors, statusLabels} from "@/lib/constants.ts";
-import {useMutation} from "@tanstack/react-query";
+import prisma from "@/lib/db.ts";
 
 const getData = createServerFn()
     .inputValidator((data: { quoteId: string }) => data)
@@ -32,21 +32,21 @@ const getData = createServerFn()
         return {quote};
     });
 
-const sendQuote = createServerFn()
-    .inputValidator((data: { quoteId: string }) => data)
+const setQuoteStatus = createServerFn()
+    .inputValidator((data: { quoteId: string, status: "SENT" | "ACCEPTED" | "DECLINED" }) => data)
     .handler(async ({data}) => {
         await prisma.quote.update({
             where: {
                 id: data.quoteId
             },
             data: {
-                status: 'SENT'
+                status: data.status
             }
         });
 
         await prisma.activity.create({
             data: {
-                type: 'QUOTE_SENT',
+                type: `QUOTE_${data.status}`,
                 quote: {
                     connect: {
                         id: data.quoteId
@@ -55,8 +55,21 @@ const sendQuote = createServerFn()
             }
         });
 
-        return { op: 'sent', quote: data.quoteId }
+        return {op: data.status.toLowerCase(), quote: data.quoteId}
     });
+
+const deleteQuote = createServerFn()
+    .inputValidator((data: { quoteId: string }) => data)
+    .handler(async ({data}) => {
+        await prisma.quote.delete({
+            where: {
+                id: data.quoteId
+            }
+        });
+
+        return {op: 'deleted', quote: data.quoteId}
+    });
+
 
 export const Route = createFileRoute('/quotes/$quoteId')({
     component: RouteComponent,
@@ -68,14 +81,33 @@ function RouteComponent() {
     const router = useRouter();
     const sendQuoteMut = useMutation({
         mutationKey: ['send', quote.id],
-        mutationFn: (data: { quoteId: string }) => sendQuote({data}),
+        mutationFn: (data: { quoteId: string, status: "SENT" | "ACCEPTED" | "DECLINED" }) => setQuoteStatus({data}),
         onSuccess: () => {
             router.invalidate();
         }
     });
+    const deleteQuoteMut = useMutation({
+        mutationKey: ['delete', quote.id],
+        mutationFn: (data: { quoteId: string }) => deleteQuote({data}),
+        onSuccess: () => {
+            router.navigate({to: '/documents'});
+        }
+    });
 
     const onSend = () => {
-        sendQuoteMut.mutate({quoteId: quote.id});
+        sendQuoteMut.mutate({quoteId: quote.id, status: 'SENT'});
+    }
+
+    const onDelete = () => {
+        deleteQuoteMut.mutate({quoteId: quote.id});
+    }
+
+    const onAccept = () => {
+        sendQuoteMut.mutate({quoteId: quote.id, status: 'ACCEPTED'});
+    }
+
+    const onDecline = () => {
+        sendQuoteMut.mutate({quoteId: quote.id, status: 'DECLINED'});
     }
 
     return (
@@ -228,10 +260,34 @@ function RouteComponent() {
                     </table>
                 </div>
             </div>
-            {quote.status === 'DRAFT' && (
-                <button onClick={onSend}
-                        className="w-full bg-blue-500 rounded-lg p-2 text-white hover:bg-blue-600 active:bg-blue-600">Envoyer</button>
-            )}
+            <div className='flex w-full justify-end gap-4'>
+                {
+                    quote.status === 'DRAFT' ? (
+                        <>
+                            <button type="button" onClick={onSend}
+                                    className="cursor-pointer bg-blue-500 rounded-lg p-2 text-white hover:bg-blue-600 active:bg-blue-600">
+                                Envoyer
+                            </button>
+                            <button type="button" onClick={onDelete}
+                                    className="cursor-pointer bg-red-500 rounded-lg p-2 text-white hover:bg-red-600 active:bg-red-600">
+                                Supprimer le brouillon
+                            </button>
+                        </>
+
+                    ) : quote.status === 'SENT' && (
+                        <>
+                            <button type="button" onClick={onAccept}
+                                    className="cursor-pointer bg-green-500 rounded-lg p-2 text-white hover:bg-green-600 active:bg-green-600">
+                                Accepter
+                            </button>
+                            <button type="button" onClick={onDecline}
+                                    className="cursor-pointer bg-red-500 rounded-lg p-2 text-white hover:bg-red-600 active:bg-red-600">
+                                Refuser
+                            </button>
+                        </>
+                    )
+                }
+            </div>
         </div>
     );
 }
