@@ -6,11 +6,12 @@ import {
 } from '@tanstack/react-router'
 import type {ReactNode} from "react";
 import BottomNav from "@/components/BottomNav.tsx";
+import GlobalNotFound from '@/components/notFound/GlobalNotFound';
 import Sidebar from "@/components/Sidebar.tsx";
 import appCss from '../styles.css?url'
 
 interface MyRouterContext {
-  queryClient: QueryClient
+  queryClient: QueryClient,
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -36,6 +37,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
 
   shellComponent: RootDocument,
+  notFoundComponent: GlobalNotFound,
 })
 
 function RootDocument({ children }: { children: ReactNode }) {

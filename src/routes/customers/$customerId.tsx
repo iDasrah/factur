@@ -7,6 +7,7 @@ import BackLink from '@/components/BackLink';
 import Card from "@/components/Card.tsx";
 import EmptyState from "@/components/EmptyState";
 import InfoItem from "@/components/InfoItem.tsx";
+import CustomerNotFound from '@/components/notFound/CustomerNotFound';
 import StatusBadge from "@/components/StatusBadge";
 import prisma from "@/lib/db.ts";
 import { calculateTotal } from '@/lib/utils';
@@ -42,6 +43,7 @@ const getData = createServerFn()
 export const Route = createFileRoute('/customers/$customerId')({
     component: RouteComponent,
     loader: ({params}) => getData({data: {customerId: params.customerId}}),
+    notFoundComponent: CustomerNotFound
 })
 
 function RouteComponent() {

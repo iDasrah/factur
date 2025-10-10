@@ -6,6 +6,7 @@ import {Calendar, FileText, Receipt, User} from "lucide-react";
 import BackLink from "@/components/BackLink";
 import Card from "@/components/Card";
 import EmptyState from "@/components/EmptyState";
+import DocumentNotFound from '@/components/notFound/DocumentNotFound';
 import StatusBadge from "@/components/StatusBadge";
 import { useDocumentMutation } from "@/hooks/useDocumentMutation";
 import prisma from "@/lib/db.ts";
@@ -77,7 +78,8 @@ const deleteQuote = createServerFn()
 
 export const Route = createFileRoute('/quotes/$quoteId')({
     component: RouteComponent,
-    loader: ({params}) => getData({data: {quoteId: params.quoteId}})
+    loader: ({params}) => getData({data: {quoteId: params.quoteId}}),
+    notFoundComponent: () => <DocumentNotFound type="quote" />
 })
 
 function RouteComponent() {
