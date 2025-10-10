@@ -47,7 +47,7 @@ const setInvoiceStatus = createServerFn()
         await prisma.activity.create({
             data: {
                 type: `INVOICE_${data.status}`,
-                quote: {
+                invoice: {
                     connect: {
                         id: data.invoiceId
                     }
@@ -176,7 +176,7 @@ function RouteComponent() {
                 </Card>
             </div>
 
-            <Card variant="section">
+            <Card variant="section" className='mb-4'>
                 <div className="card-section-header">
                     <Receipt size={20} className="card-section-icon" />
                     <h3 className="section-card-title">Détail de la facture</h3>
@@ -225,18 +225,22 @@ function RouteComponent() {
                     </p>
                 </div>
             </Card>
-            <button
-                type="button"
-                onClick={onPay}
-                className="action-btn-success">
-                Accepter
-            </button>
-            <button
-                type="button"
-                onClick={onCancel}
-                className="action-btn-danger">
-                Refuser
-            </button>
+            {invoice.status === 'UNPAID' && (
+                <div className='flex w-full justify-end gap-4'>
+                    <button
+                    type="button"
+                    onClick={onPay}
+                    className="action-btn-success">
+                    Payé
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="action-btn-danger">
+                        Annuler
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

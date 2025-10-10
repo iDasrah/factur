@@ -101,10 +101,8 @@ export const Route = createFileRoute('/documents/new')({
 function RouteComponent() {
     const navigate = useNavigate();
     const [documentType, setDocumentType] = useState<'quote' | 'invoice'>('quote');
-    const documentTypeId = useId();
     const customerId = useId();
     const titleId = useId();
-    const linesId = useId();
     const notesId = useId();
 
     const { data: customers } = useQuery({
@@ -151,10 +149,10 @@ function RouteComponent() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl">
                 <Card variant="section" className="mb-6">
-                    <label htmlFor={documentTypeId} className="label">
+                    <p className="label">
                         Type de document *
-                    </label>
-                    <div className="flex gap-4" id={documentTypeId}>
+                    </p>
+                    <div className="flex gap-4">
                         <button
                             type="button"
                             onClick={() => setDocumentType('quote')}
@@ -204,10 +202,10 @@ function RouteComponent() {
                     />
 
                     <div>
-                        <label htmlFor={linesId} className="label">
+                        <p className="label">
                             Lignes *
-                        </label>
-                        <div className="space-y-3" id={linesId}>
+                        </p>
+                        <div className="space-y-3">
                             {fields.map((field, index) => (
                                 <div key={field.id} className="flex gap-3 items-start">
                                     <div className="flex-1/2">

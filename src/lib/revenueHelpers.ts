@@ -11,13 +11,15 @@ export function calculateRevenues(
     let pending = 0;
 
     invoices.forEach(invoice => {
-        const invoiceTotal = calculateTotal(invoice.lines);
-        total += invoiceTotal;
+        if (invoice.status !== 'CANCELLED') {
+            const invoiceTotal = calculateTotal(invoice.lines);
+            total += invoiceTotal;
 
-        if (invoice.status === 'PAID') {
-            invoiced += invoiceTotal;
-        } else if (invoice.status === 'UNPAID') {
-            pending += invoiceTotal;
+            if (invoice.status === 'PAID') {
+                invoiced += invoiceTotal;
+            } else if (invoice.status === 'UNPAID') {
+                pending += invoiceTotal;
+            }
         }
     });
 
